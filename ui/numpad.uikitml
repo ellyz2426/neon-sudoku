@@ -1,0 +1,23 @@
+<container name="root" display="none" flex-direction="column" align-items="center" padding="10" background-color="#001a1a" border-radius="10" border-width="2" border-color="#00ffff" width="140" gap="4">
+  <text font-size="12" color="#00ffff" text-align="center">NUMBERS</text>
+  <container flex-direction="row" gap="3">
+    <text name="btn-1" font-size="16" color="#00ffff" background-color="#003333" padding="4" border-radius="4" border-width="1" border-color="#006666" width="32" text-align="center" cursor="pointer">1</text>
+    <text name="btn-2" font-size="16" color="#00ffff" background-color="#003333" padding="4" border-radius="4" border-width="1" border-color="#006666" width="32" text-align="center" cursor="pointer">2</text>
+    <text name="btn-3" font-size="16" color="#00ffff" background-color="#003333" padding="4" border-radius="4" border-width="1" border-color="#006666" width="32" text-align="center" cursor="pointer">3</text>
+  </container>
+  <container flex-direction="row" gap="3">
+    <text name="btn-4" font-size="16" color="#00ffff" background-color="#003333" padding="4" border-radius="4" border-width="1" border-color="#006666" width="32" text-align="center" cursor="pointer">4</text>
+    <text name="btn-5" font-size="16" color="#00ffff" background-color="#003333" padding="4" border-radius="4" border-width="1" border-color="#006666" width="32" text-align="center" cursor="pointer">5</text>
+    <text name="btn-6" font-size="16" color="#00ffff" background-color="#003333" padding="4" border-radius="4" border-width="1" border-color="#006666" width="32" text-align="center" cursor="pointer">6</text>
+  </container>
+  <container flex-direction="row" gap="3">
+    <text name="btn-7" font-size="16" color="#00ffff" background-color="#003333" padding="4" border-radius="4" border-width="1" border-color="#006666" width="32" text-align="center" cursor="pointer">7</text>
+    <text name="btn-8" font-size="16" color="#00ffff" background-color="#003333" padding="4" border-radius="4" border-width="1" border-color="#006666" width="32" text-align="center" cursor="pointer">8</text>
+    <text name="btn-9" font-size="16" color="#00ffff" background-color="#003333" padding="4" border-radius="4" border-width="1" border-color="#006666" width="32" text-align="center" cursor="pointer">9</text>
+  </container>
+  <text name="btn-clear" font-size="11" color="#ff4444" background-color="#220000" padding="4" border-radius="4" border-width="1" border-color="#440000" text-align="center" width="104" cursor="pointer">CLEAR</text>
+  <text name="btn-pencil" font-size="10" color="#ffaa00" background-color="#221100" padding="3" border-radius="4" border-width="1" border-color="#443300" text-align="center" width="104" cursor="pointer">PENCIL: OFF</text>
+  <text name="lbl-pencil" font-size="1" color="#001a1a"> </text>
+  <text name="btn-hint" font-size="10" color="#00ff88" background-color="#002211" padding="3" border-radius="4" border-width="1" border-color="#004422" text-align="center" width="104" cursor="pointer">HINT</text>
+  <text name="btn-undo" font-size="10" color="#aaaaff" background-color="#111122" padding="3" border-radius="4" border-width="1" border-color="#333366" text-align="center" width="104" cursor="pointer">UNDO</text>
+</container>

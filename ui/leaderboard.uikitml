@@ -1,0 +1,14 @@
+<container name="root" display="none" flex-direction="column" align-items="center" padding="12" background-color="#001a1a" border-radius="12" border-width="2" border-color="#00ffff" width="380" gap="4">
+  <text font-size="18" color="#00ffff" font-weight="bold" text-align="center">LEADERBOARD</text>
+  <text name="lbl-r0" font-size="10" color="#00ddff" text-align="left" width="340">1. ---</text>
+  <text name="lbl-r1" font-size="10" color="#00ddff" text-align="left" width="340">2. ---</text>
+  <text name="lbl-r2" font-size="10" color="#00ddff" text-align="left" width="340">3. ---</text>
+  <text name="lbl-r3" font-size="10" color="#00bbcc" text-align="left" width="340">4. ---</text>
+  <text name="lbl-r4" font-size="10" color="#00bbcc" text-align="left" width="340">5. ---</text>
+  <text name="lbl-r5" font-size="10" color="#009999" text-align="left" width="340">6. ---</text>
+  <text name="lbl-r6" font-size="10" color="#009999" text-align="left" width="340">7. ---</text>
+  <text name="lbl-r7" font-size="10" color="#007777" text-align="left" width="340">8. ---</text>
+  <text name="lbl-r8" font-size="10" color="#007777" text-align="left" width="340">9. ---</text>
+  <text name="lbl-r9" font-size="10" color="#005555" text-align="left" width="340">10. ---</text>
+  <text name="btn-back" font-size="12" color="#888888" background-color="#111111" padding="4" border-radius="4" text-align="center" width="120" cursor="pointer" margin-top="4">BACK</text>
+</container>

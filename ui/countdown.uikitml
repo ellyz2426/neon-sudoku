@@ -1,0 +1,3 @@
+<container name="root" display="none" padding="12" background-color="#001a1a" border-radius="12" border-width="2" border-color="#00ffff" align-items="center">
+  <text name="lbl-count" font-size="36" color="#00ffff" font-weight="bold" text-align="center">3</text>
+</container>

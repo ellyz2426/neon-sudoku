@@ -1,0 +1,21 @@
+<container name="root" display="none" flex-direction="column" align-items="center" padding="12" background-color="#001a1a" border-radius="12" border-width="2" border-color="#888888" width="340" gap="4">
+  <text font-size="18" color="#888888" font-weight="bold" text-align="center">HOW TO PLAY</text>
+  <text font-size="10" color="#aaaaaa" text-align="left" width="300">Fill every cell so each row, column, and 3x3 box contains digits 1-9 exactly once.</text>
+  <text font-size="11" color="#00ffff" text-align="left" width="300" margin-top="4">Browser Controls:</text>
+  <text font-size="9" color="#cccccc" text-align="left" width="300">Click cell to select, 1-9 to place</text>
+  <text font-size="9" color="#cccccc" text-align="left" width="300">Arrow keys to navigate grid</text>
+  <text font-size="9" color="#cccccc" text-align="left" width="300">P = pencil mode, H = hint, Z = undo</text>
+  <text font-size="9" color="#cccccc" text-align="left" width="300">Backspace/Delete/0 = erase, ESC = pause</text>
+  <text font-size="11" color="#00ffff" text-align="left" width="300" margin-top="4">VR Controls:</text>
+  <text font-size="9" color="#cccccc" text-align="left" width="300">Laser pointer to select cells</text>
+  <text font-size="9" color="#cccccc" text-align="left" width="300">Numpad panel for number input</text>
+  <text font-size="9" color="#cccccc" text-align="left" width="300">B = pause</text>
+  <text font-size="11" color="#ffaa00" text-align="left" width="300" margin-top="4">Modes:</text>
+  <text font-size="9" color="#cccccc" text-align="left" width="300">Classic: solve at your own pace</text>
+  <text font-size="9" color="#cccccc" text-align="left" width="300">Timed: beat the clock</text>
+  <text font-size="9" color="#cccccc" text-align="left" width="300">Daily: same puzzle for everyone</text>
+  <text font-size="9" color="#cccccc" text-align="left" width="300">Zen: no mistakes limit, relax</text>
+  <text font-size="9" color="#cccccc" text-align="left" width="300">Speed: quick puzzles</text>
+  <text font-size="9" color="#cccccc" text-align="left" width="300">Practice: hints + no pressure</text>
+  <text name="btn-back" font-size="12" color="#888888" background-color="#111111" padding="4" border-radius="4" text-align="center" width="120" cursor="pointer" margin-top="4">BACK</text>
+</container>

@@ -1,0 +1,14 @@
+<container name="root" display="none" flex-direction="column" align-items="center" padding="16" background-color="#001a1a" border-radius="12" border-width="2" border-color="#00ffff" width="320" gap="8">
+  <text font-size="28" color="#00ffff" font-weight="bold" text-align="center">NEON SUDOKU</text>
+  <text font-size="12" color="#008888" text-align="center">Holographic Puzzle</text>
+  <container flex-direction="row" gap="8" margin-top="4">
+    <text name="lbl-level" font-size="11" color="#00ff88">Level 1</text>
+    <text name="lbl-xp" font-size="11" color="#00ff88">XP: 0/150</text>
+  </container>
+  <text name="btn-play" font-size="18" color="#00ffff" background-color="#003333" padding="8" border-radius="6" border-width="1" border-color="#00ffff" text-align="center" width="200" hover-background-color="#004444" cursor="pointer">PLAY</text>
+  <text name="btn-scores" font-size="14" color="#00ddff" background-color="#002222" padding="6" border-radius="6" border-width="1" border-color="#004444" text-align="center" width="200" cursor="pointer">LEADERBOARD</text>
+  <text name="btn-achv" font-size="14" color="#ffaa00" background-color="#222200" padding="6" border-radius="6" border-width="1" border-color="#444400" text-align="center" width="200" cursor="pointer">ACHIEVEMENTS</text>
+  <text name="btn-stats" font-size="14" color="#00ff88" background-color="#002211" padding="6" border-radius="6" border-width="1" border-color="#004422" text-align="center" width="200" cursor="pointer">STATS</text>
+  <text name="btn-settings" font-size="14" color="#aaaaff" background-color="#111122" padding="6" border-radius="6" border-width="1" border-color="#333366" text-align="center" width="200" cursor="pointer">SETTINGS</text>
+  <text name="btn-help" font-size="14" color="#888888" background-color="#111111" padding="6" border-radius="6" border-width="1" border-color="#333333" text-align="center" width="200" cursor="pointer">HELP</text>
+</container>
