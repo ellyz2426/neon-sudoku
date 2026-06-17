@@ -51,11 +51,11 @@
   <text name="btn-undo" font-size="10" color="#aaaaff" background-color="#111122" padding="3" border-radius="4" border-width="1" border-color="#333366" text-align="center" width="108" cursor="pointer">UNDO</text>
   <text font-size="8" color="#005555" text-align="center" margin-top="2">NAVIGATE</text>
   <container flex-direction="column" align-items="center" gap="2">
-    <text name="btn-nav-up" font-size="14" color="#00bbbb" background-color="#002222" padding="2" border-radius="4" border-width="1" border-color="#004444" width="32" text-align="center" cursor="pointer">▲</text>
+    <text name="btn-nav-up" font-size="14" color="#00bbbb" background-color="#002222" padding="2" border-radius="4" border-width="1" border-color="#004444" width="32" text-align="center" cursor="pointer">^</text>
     <container flex-direction="row" gap="2">
-      <text name="btn-nav-left" font-size="14" color="#00bbbb" background-color="#002222" padding="2" border-radius="4" border-width="1" border-color="#004444" width="32" text-align="center" cursor="pointer">◀</text>
-      <text name="btn-nav-down" font-size="14" color="#00bbbb" background-color="#002222" padding="2" border-radius="4" border-width="1" border-color="#004444" width="32" text-align="center" cursor="pointer">▼</text>
-      <text name="btn-nav-right" font-size="14" color="#00bbbb" background-color="#002222" padding="2" border-radius="4" border-width="1" border-color="#004444" width="32" text-align="center" cursor="pointer">▶</text>
+      <text name="btn-nav-left" font-size="14" color="#00bbbb" background-color="#002222" padding="2" border-radius="4" border-width="1" border-color="#004444" width="32" text-align="center" cursor="pointer"><</text>
+      <text name="btn-nav-down" font-size="14" color="#00bbbb" background-color="#002222" padding="2" border-radius="4" border-width="1" border-color="#004444" width="32" text-align="center" cursor="pointer">v</text>
+      <text name="btn-nav-right" font-size="14" color="#00bbbb" background-color="#002222" padding="2" border-radius="4" border-width="1" border-color="#004444" width="32" text-align="center" cursor="pointer">></text>
     </container>
   </container>
 </container>

@@ -1,0 +1,42 @@
+
+> neon-sudoku@1.0.0 dev:runtime
+> vite
+
+🚀 Generating initial UIKitML files for dev server...
+👁️  UIKitML file watcher started - monitoring for changes...
+
+  VITE v7.3.5  ready in 1762 ms
+
+  ➜  Local:   http://localhost:5173/
+  ➜  Network: http://198.19.0.2:5173/
+[browser] [unhandledrejection] TypeError: Cannot read properties of undefined (reading 'createEntity')
+    at SudokuGame.createPanels (http://localhost:5173/src/index.ts:645:37)
+    at SudokuGame.init (http://localhost:5173/src/index.ts:459:10)
+    at World.registerSystem (http://localhost:5173/node_modules/.vite/deps/elics.js?v=a07b457f:898:20)
+    at main (http://localhost:5173/src/index.ts:1953:9)
+[browser:pageerror] TypeError: Cannot read properties of undefined (reading 'createEntity')
+    at SudokuGame.createPanels (http://localhost:5173/src/index.ts:645:37)
+    at SudokuGame.init (http://localhost:5173/src/index.ts:459:10)
+    at World.registerSystem (http://localhost:5173/node_modules/.vite/deps/elics.js?v=a07b457f:898:20)
+    at main (http://localhost:5173/src/index.ts:1953:9)
+10:06:42 PM [vite] (client) page reload src/index.ts
+10:06:48 PM [vite] (client) page reload src/index.ts
+10:06:58 PM [vite] (client) page reload src/index.ts
+10:08:23 PM [vite] (client) page reload src/index.ts
+10:09:08 PM [vite] (client) page reload src/index.ts
+
+🥽 IWSDK Dev Summary (Development):
+  - Device: metaQuest3
+  - Runtime injected: 1116.7KB
+  - Activation mode: localhost
+  - AI: agent mode (WebSocket at /__iwer_mcp)
+  - Note: Runtime only activates on localhost/local networks
+
+
+🥽 IWSDK Dev Summary (Development):
+  - Device: metaQuest3
+  - Runtime injected: 1116.7KB
+  - Activation mode: localhost
+  - AI: agent mode (WebSocket at /__iwer_mcp)
+  - Note: Runtime only activates on localhost/local networks
+

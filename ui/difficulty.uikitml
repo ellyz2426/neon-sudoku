@@ -1,8 +1,20 @@
-<container name="root" display="none" flex-direction="column" align-items="center" padding="16" background-color="#001a1a" border-radius="12" border-width="2" border-color="#00ffff" width="280" gap="8">
+<container name="root" display="none" flex-direction="column" align-items="center" padding="16" background-color="#001a1a" border-radius="12" border-width="2" border-color="#00ffff" width="300" gap="5">
   <text font-size="20" color="#00ffff" font-weight="bold" text-align="center">DIFFICULTY</text>
-  <text name="btn-easy" font-size="16" color="#00ff88" background-color="#002211" padding="8" border-radius="6" border-width="1" border-color="#00ff88" text-align="center" width="200" cursor="pointer">Easy</text>
-  <text name="btn-medium" font-size="16" color="#ffaa00" background-color="#221100" padding="8" border-radius="6" border-width="1" border-color="#ffaa00" text-align="center" width="200" cursor="pointer">Medium</text>
-  <text name="btn-hard" font-size="16" color="#ff4444" background-color="#220000" padding="8" border-radius="6" border-width="1" border-color="#ff4444" text-align="center" width="200" cursor="pointer">Hard</text>
-  <text name="btn-expert" font-size="16" color="#ff00ff" background-color="#220022" padding="8" border-radius="6" border-width="1" border-color="#ff00ff" text-align="center" width="200" cursor="pointer">Expert</text>
+  <container flex-direction="column" align-items="center" gap="2" width="240">
+    <text name="btn-easy" font-size="15" color="#00ff88" background-color="#002211" padding="7" border-radius="6" border-width="1" border-color="#00ff88" text-align="center" width="240" cursor="pointer">Easy</text>
+    <text name="lbl-easy-info" font-size="8" color="#006644" text-align="center">38 clues</text>
+  </container>
+  <container flex-direction="column" align-items="center" gap="2" width="240">
+    <text name="btn-medium" font-size="15" color="#ffaa00" background-color="#221100" padding="7" border-radius="6" border-width="1" border-color="#ffaa00" text-align="center" width="240" cursor="pointer">Medium</text>
+    <text name="lbl-medium-info" font-size="8" color="#886600" text-align="center">30 clues</text>
+  </container>
+  <container flex-direction="column" align-items="center" gap="2" width="240">
+    <text name="btn-hard" font-size="15" color="#ff4444" background-color="#220000" padding="7" border-radius="6" border-width="1" border-color="#ff4444" text-align="center" width="240" cursor="pointer">Hard</text>
+    <text name="lbl-hard-info" font-size="8" color="#882222" text-align="center">25 clues</text>
+  </container>
+  <container flex-direction="column" align-items="center" gap="2" width="240">
+    <text name="btn-expert" font-size="15" color="#ff00ff" background-color="#220022" padding="7" border-radius="6" border-width="1" border-color="#ff00ff" text-align="center" width="240" cursor="pointer">Expert</text>
+    <text name="lbl-expert-info" font-size="8" color="#882288" text-align="center">20 clues</text>
+  </container>
   <text name="btn-back" font-size="12" color="#888888" background-color="#111111" padding="4" border-radius="4" text-align="center" width="120" cursor="pointer" margin-top="4">BACK</text>
 </container>

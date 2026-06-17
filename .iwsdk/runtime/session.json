@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "sessionId": "771be440-64ac-4266-a316-fae0fdeab42e",
+  "workspaceRoot": "/home/hatch/workspace/neon-sudoku",
+  "pid": 1999,
+  "port": 5173,
+  "localUrl": "http://localhost:5173/",
+  "networkUrls": [
+    "http://198.19.0.2:5173/"
+  ],
+  "aiMode": "agent",
+  "aiTools": [
+    "claude"
+  ],
+  "browser": {
+    "status": "connected",
+    "connected": true,
+    "connectedClientCount": 1,
+    "lastTransitionAt": "2026-06-17T22:10:54.254Z"
+  },
+  "registeredAt": "2026-06-17T22:09:31.752Z",
+  "updatedAt": "2026-06-17T22:10:54.266Z"
+}

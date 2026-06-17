@@ -64,6 +64,22 @@ interface Achievement {
 	check: () => boolean;
 }
 
+interface SavedGame {
+	board: { value: number; solution: number; isGiven: boolean; pencilMarks: boolean[] }[][];
+	mode: GameMode;
+	difficulty: Difficulty;
+	timer: number;
+	score: number;
+	mistakes: number;
+	hintsUsed: number;
+	cellsCompleted: number;
+	totalCells: number;
+	pencilMode: boolean;
+	comboCount: number;
+	bestCombo: number;
+	undoStack: { r: number; c: number; oldVal: number; oldPencil: boolean[] }[];
+}
+
 // ===== CONSTANTS =====
 const CELL_SIZE = 0.058;
 const CELL_GAP = 0.004;
@@ -429,6 +445,10 @@ class SudokuGame extends createSystem({
 	private checkHighlightTimer = 0;
 	private glowCells: { r: number; c: number; timer: number }[] = [];
 	private xpGained = 0;
+	private selectedNum = 0; // currently active number on numpad
+	private rippleActive = false;
+	private rippleTimer = 0;
+	private rippleCells: { r: number; c: number; delay: number }[] = [];
 
 	// Career stats
 	private career = {
@@ -651,15 +671,14 @@ class SudokuGame extends createSystem({
 			'pause', 'gameover', 'leaderboard', 'achvlist',
 			'settings', 'stats', 'help', 'toast', 'countdown',
 		];
-		const worldPanels = ['title', 'modeselect', 'difficulty', 'numpad', 'pause', 'gameover', 'leaderboard', 'achvlist', 'settings', 'stats', 'help'];
 		const hudPanels = ['hud', 'toast', 'countdown'];
 
 		for (const name of configs) {
-			const entity = (this.world as any).ecs.createEntity();
+			const entity = this.world.createTransformEntity();
 			entity.addComponent(PanelUI, { config: `./ui/${name}.json` });
 
 			if (hudPanels.includes(name)) {
-				entity.addComponent(Follower, { target: this.world.player.head });
+				entity.addComponent(Follower);
 				const ov = entity.getVectorView(Follower, 'offsetPosition');
 				if (name === 'hud') { ov[0] = 0; ov[1] = 0.15; ov[2] = -0.6; }
 				else if (name === 'toast') { ov[0] = 0; ov[1] = -0.12; ov[2] = -0.6; }
@@ -727,7 +746,8 @@ class SudokuGame extends createSystem({
 
 	private wireAllPanels() {
 		this.tryWirePanel('title', () => {
-			this.wireButton('title', 'btn-play', () => { this.audio.playClick(); this.setState('modeSelect'); });
+			this.wireButton('title', 'btn-continue', () => { this.audio.playClick(); this.loadSavedGame(); });
+			this.wireButton('title', 'btn-play', () => { this.audio.playClick(); this.clearSavedGame(); this.setState('modeSelect'); });
 			this.wireButton('title', 'btn-scores', () => { this.audio.playClick(); this.setState('leaderboard'); });
 			this.wireButton('title', 'btn-achv', () => { this.audio.playClick(); this.achvPage = 0; this.setState('achvlist'); });
 			this.wireButton('title', 'btn-stats', () => { this.audio.playClick(); this.setState('stats'); });
@@ -751,13 +771,15 @@ class SudokuGame extends createSystem({
 				this.wireButton('diff', `btn-${d}`, () => { this.audio.playClick(); this.difficulty = d; this.startGame(); });
 			}
 			this.wireButton('diff', 'btn-back', () => { this.audio.playClick(); this.setState('modeSelect'); });
+			this.updateDifficultyPanel();
 		});
 
 		this.tryWirePanel('numpad', () => {
 			for (let n = 1; n <= 9; n++) {
-				this.wireButton('numpad', `btn-${n}`, () => this.placeNumber(n));
+				const num = n;
+				this.wireButton('numpad', `btn-${n}`, () => { this.selectedNum = num; this.placeNumber(num); this.updateNumpadHighlight(); });
 			}
-			this.wireButton('numpad', 'btn-clear', () => this.eraseCell());
+			this.wireButton('numpad', 'btn-clear', () => { this.selectedNum = 0; this.eraseCell(); this.updateNumpadHighlight(); });
 			this.wireButton('numpad', 'btn-pencil', () => this.togglePencil());
 			this.wireButton('numpad', 'btn-hint', () => this.useHint());
 			this.wireButton('numpad', 'btn-undo', () => this.undoAction());
@@ -771,7 +793,8 @@ class SudokuGame extends createSystem({
 
 		this.tryWirePanel('pause', () => {
 			this.wireButton('pause', 'btn-resume', () => { this.audio.playClick(); this.setState('playing'); });
-			this.wireButton('pause', 'btn-quit', () => { this.audio.playClick(); this.setState('title'); });
+			this.wireButton('pause', 'btn-save-quit', () => { this.audio.playClick(); this.saveGameState(); this.showToast('Game saved!'); this.setState('title'); });
+			this.wireButton('pause', 'btn-quit', () => { this.audio.playClick(); this.clearSavedGame(); this.setState('title'); });
 		});
 
 		this.tryWirePanel('gameover', () => {
@@ -826,6 +849,7 @@ class SudokuGame extends createSystem({
 				break;
 			case 'difficulty':
 				this.showPanel('diff', true);
+				this.updateDifficultyPanel();
 				break;
 			case 'playing':
 				this.gridGroup.visible = true;
@@ -840,6 +864,7 @@ class SudokuGame extends createSystem({
 				this.gridGroup.visible = true;
 				this.showPanel('pause', true);
 				this.timerRunning = false;
+				this.updatePausePanel();
 				break;
 			case 'complete':
 				this.gridGroup.visible = true;
@@ -1013,6 +1038,7 @@ class SudokuGame extends createSystem({
 		this.updateGridVisuals();
 		this.updateHud();
 		this.updateNumberCounts();
+		this.saveGameState();
 	}
 
 	private eraseCell() {
@@ -1196,7 +1222,7 @@ class SudokuGame extends createSystem({
 		}
 		for (let n = 1; n <= 9; n++) {
 			const remaining = 9 - counts[n];
-			this.setText('numpad', `lbl-c${n}`, remaining > 0 ? `x${remaining}` : '✓');
+			this.setText('numpad', `lbl-c${n}`, remaining > 0 ? `x${remaining}` : 'OK');
 		}
 	}
 
@@ -1223,6 +1249,7 @@ class SudokuGame extends createSystem({
 
 	private endGame(win: boolean) {
 		this.timerRunning = false;
+		this.clearSavedGame();
 
 		if (win) {
 			// Calculate final score
@@ -1239,6 +1266,14 @@ class SudokuGame extends createSystem({
 			if (this.career.streak > this.career.bestStreak) this.career.bestStreak = this.career.streak;
 			if (this.timer < this.career.bestTime) this.career.bestTime = this.timer;
 			if (this.mistakes === 0 && this.hintsUsed === 0) this.career.perfectGames++;
+
+			// Per-difficulty best times
+			const bestTimes = loadData<Record<Difficulty, number>>('bestTimes', { easy: Infinity, medium: Infinity, hard: Infinity, expert: Infinity });
+			if (this.timer < (bestTimes[this.difficulty] ?? Infinity)) {
+				bestTimes[this.difficulty] = this.timer;
+				saveData('bestTimes', bestTimes);
+				this.showToast(`New best ${this.difficulty} time!`);
+			}
 
 			// Difficulty wins
 			if (this.difficulty === 'easy') this.career.easyWins++;
@@ -1279,6 +1314,7 @@ class SudokuGame extends createSystem({
 			this.leaderboard = this.leaderboard.slice(0, 20);
 
 			this.audio.playComplete();
+			this.startRipple();
 			this.particles.burst(0, BOARD_Y + 0.2, BOARD_Z + 0.1, this.theme.accent, 30);
 			setTimeout(() => this.particles.burst(0.2, BOARD_Y + 0.3, BOARD_Z + 0.1, this.theme.placed, 20), 200);
 			setTimeout(() => this.particles.burst(-0.2, BOARD_Y + 0.25, BOARD_Z + 0.1, 0xffff00, 20), 400);
@@ -1373,6 +1409,24 @@ class SudokuGame extends createSystem({
 	private updateTitlePanel() {
 		this.setText('title', 'lbl-level', `Level ${this.career.level}`);
 		this.setText('title', 'lbl-xp', `XP: ${this.career.xp}/${this.xpForLevel(this.career.level)}`);
+		// Streak display
+		if (this.career.streak > 0) {
+			this.setText('title', 'lbl-streak', `Win Streak: ${this.career.streak}`);
+		} else {
+			this.setText('title', 'lbl-streak', this.career.wins > 0 ? `${this.career.wins} puzzles solved` : 'Start your first puzzle!');
+		}
+		// Continue button
+		const hasSaved = this.hasSavedGame();
+		this.setVis('title', 'btn-continue', hasSaved);
+		this.setVis('title', 'lbl-continue-info', hasSaved);
+		if (hasSaved) {
+			const saved = loadData<SavedGame | null>('savedgame', null);
+			if (saved) {
+				const pct = saved.totalCells > 0 ? Math.floor((saved.cellsCompleted / saved.totalCells) * 100) : 0;
+				const diffLabel = saved.difficulty.charAt(0).toUpperCase() + saved.difficulty.slice(1);
+				this.setText('title', 'lbl-continue-info', `${MODE_NAMES[saved.mode]} ${diffLabel} - ${pct}% done`);
+			}
+		}
 	}
 
 	private updateHud() {
@@ -1456,22 +1510,69 @@ class SudokuGame extends createSystem({
 	}
 
 	private updateStatsPanel() {
+		const bestTimes = loadData<Record<string, number>>('bestTimes', { easy: Infinity, medium: Infinity, hard: Infinity, expert: Infinity });
 		this.setText('stats', 'lbl-s0', `Games: ${this.career.games}`);
-		this.setText('stats', 'lbl-s1', `Wins: ${this.career.wins}`);
-		this.setText('stats', 'lbl-s2', `Win Rate: ${this.career.games > 0 ? Math.round(this.career.wins / this.career.games * 100) : 0}%`);
-		this.setText('stats', 'lbl-s3', `Best Time: ${this.career.bestTime < Infinity ? this.formatTime(this.career.bestTime) : '--:--'}`);
+		this.setText('stats', 'lbl-s1', `Wins: ${this.career.wins} (${this.career.games > 0 ? Math.round(this.career.wins / this.career.games * 100) : 0}%)`);
+		this.setText('stats', 'lbl-s2', `Current Streak: ${this.career.streak} | Best: ${this.career.bestStreak}`);
+		this.setText('stats', 'lbl-s3', `Overall Best: ${this.career.bestTime < Infinity ? this.formatTime(this.career.bestTime) : '--:--'}`);
 		this.setText('stats', 'lbl-s4', `Perfect Games: ${this.career.perfectGames}`);
-		this.setText('stats', 'lbl-s5', `Best Streak: ${this.career.bestStreak}`);
-		this.setText('stats', 'lbl-s6', `Total Mistakes: ${this.career.totalMistakes}`);
-		this.setText('stats', 'lbl-s7', `Total Hints: ${this.career.totalHints}`);
-		this.setText('stats', 'lbl-s8', `Daily Done: ${this.career.dailyDone}`);
-		this.setText('stats', 'lbl-s9', `Level: ${this.career.level} (${this.career.xp} XP)`);
-		this.setText('stats', 'lbl-s10', `Easy Wins: ${this.career.easyWins}`);
-		this.setText('stats', 'lbl-s11', `Hard Wins: ${this.career.hardWins}`);
+		this.setText('stats', 'lbl-s5', `Total Mistakes: ${this.career.totalMistakes} | Hints: ${this.career.totalHints}`);
+		this.setText('stats', 'lbl-s6', `Level: ${this.career.level} (${this.career.xp}/${this.xpForLevel(this.career.level)} XP)`);
+		this.setText('stats', 'lbl-s7', `Easy: ${this.career.easyWins}W${bestTimes['easy'] < Infinity ? ' (' + this.formatTime(bestTimes['easy']) + ')' : ''}`);
+		this.setText('stats', 'lbl-s8', `Medium: ${this.career.mediumWins}W${bestTimes['medium'] < Infinity ? ' (' + this.formatTime(bestTimes['medium']) + ')' : ''}`);
+		this.setText('stats', 'lbl-s9', `Hard: ${this.career.hardWins}W${bestTimes['hard'] < Infinity ? ' (' + this.formatTime(bestTimes['hard']) + ')' : ''}`);
+		this.setText('stats', 'lbl-s10', `Expert: ${this.career.expertWins}W${bestTimes['expert'] < Infinity ? ' (' + this.formatTime(bestTimes['expert']) + ')' : ''}`);
+		this.setText('stats', 'lbl-s11', `Daily: ${this.career.dailyDone} done (${this.career.dailyStreak}-day streak)`);
+		const totalHours = Math.floor(this.career.totalTime / 3600);
+		const totalMins = Math.floor((this.career.totalTime % 3600) / 60);
+		this.setText('stats', 'lbl-s12', `Total Time: ${totalHours}h ${totalMins}m`);
+		this.setText('stats', 'lbl-s13', `Achievements: ${this.achievementsUnlocked.size}/${this.getAchievements().length}`);
+		this.setText('stats', 'lbl-s14', ` `);
 	}
 
 	private updateCountdownPanel() {
 		this.setText('countdown', 'lbl-count', this.countdownVal > 0 ? `${this.countdownVal}` : 'GO!');
+	}
+
+	private updateDifficultyPanel() {
+		const diffs: Difficulty[] = ['easy', 'medium', 'hard', 'expert'];
+		const diffWins: Record<Difficulty, number> = {
+			easy: this.career.easyWins,
+			medium: this.career.mediumWins,
+			hard: this.career.hardWins,
+			expert: this.career.expertWins,
+		};
+		const bestTimes = loadData<Record<Difficulty, number>>('bestTimes', { easy: Infinity, medium: Infinity, hard: Infinity, expert: Infinity });
+		for (const d of diffs) {
+			const clues = DIFF_CLUES[d];
+			const wins = diffWins[d];
+			const best = bestTimes[d];
+			let info = `${clues} clues`;
+			if (wins > 0) info += ` | ${wins} wins`;
+			if (best < Infinity) info += ` | Best: ${this.formatTime(best)}`;
+			if (this.mode === 'timed') info += ` | ${Math.floor(TIMED_SECONDS[d] / 60)}m limit`;
+			this.setText('diff', `lbl-${d}-info`, info);
+		}
+	}
+
+	private updatePausePanel() {
+		const pct = this.totalCells > 0 ? Math.floor((this.cellsCompleted / this.totalCells) * 100) : 0;
+		const diffLabel = this.difficulty.charAt(0).toUpperCase() + this.difficulty.slice(1);
+		this.setText('pause', 'lbl-pause-info', `${MODE_NAMES[this.mode]} ${diffLabel} - ${pct}% - ${this.formatTime(this.timer)}`);
+	}
+
+	private updateNumpadHighlight() {
+		const doc = this.getDoc('numpad');
+		if (!doc) return;
+		for (let n = 1; n <= 9; n++) {
+			const btn = doc.getElementById(`btn-${n}`) as any;
+			if (!btn) continue;
+			if (n === this.selectedNum) {
+				btn.setProperties({ 'background-color': '#005555', 'border-color': '#00ffff', 'border-width': 2 });
+			} else {
+				btn.setProperties({ 'background-color': '#003333', 'border-color': '#006666', 'border-width': 1 });
+			}
+		}
 	}
 
 	private formatTime(t: number): string {
@@ -1501,9 +1602,13 @@ class SudokuGame extends createSystem({
 			document.addEventListener('keydown', (e: KeyboardEvent) => {
 				if (this.state === 'playing') {
 					if (e.key >= '1' && e.key <= '9') {
+						this.selectedNum = parseInt(e.key);
 						this.placeNumber(parseInt(e.key));
+						this.updateNumpadHighlight();
 					} else if (e.key === 'Backspace' || e.key === 'Delete' || e.key === '0') {
+						this.selectedNum = 0;
 						this.eraseCell();
+						this.updateNumpadHighlight();
 					} else if (e.key === 'p' || e.key === 'P') {
 						this.togglePencil();
 					} else if (e.key === 'h' || e.key === 'H') {
@@ -1650,6 +1755,103 @@ class SudokuGame extends createSystem({
 		saveData('theme', this.themeIdx);
 	}
 
+	// ===== SAVE/RESUME =====
+	private saveGameState() {
+		const board: SavedGame['board'] = [];
+		for (let r = 0; r < 9; r++) {
+			board[r] = [];
+			for (let c = 0; c < 9; c++) {
+				const cell = this.cells[r][c];
+				board[r][c] = {
+					value: cell.value,
+					solution: cell.solution,
+					isGiven: cell.isGiven,
+					pencilMarks: [...cell.pencilMarks],
+				};
+			}
+		}
+		const saved: SavedGame = {
+			board,
+			mode: this.mode,
+			difficulty: this.difficulty,
+			timer: this.timer,
+			score: this.score,
+			mistakes: this.mistakes,
+			hintsUsed: this.hintsUsed,
+			cellsCompleted: this.cellsCompleted,
+			totalCells: this.totalCells,
+			pencilMode: this.pencilMode,
+			comboCount: this.comboCount,
+			bestCombo: this.bestCombo,
+			undoStack: this.undoStack.map(u => ({ ...u, oldPencil: [...u.oldPencil] })),
+		};
+		saveData('savedgame', saved);
+	}
+
+	private hasSavedGame(): boolean {
+		const saved = loadData<SavedGame | null>('savedgame', null);
+		return saved !== null;
+	}
+
+	private loadSavedGame(): boolean {
+		const saved = loadData<SavedGame | null>('savedgame', null);
+		if (!saved) return false;
+
+		this.mode = saved.mode;
+		this.difficulty = saved.difficulty;
+		this.timer = saved.timer;
+		this.score = saved.score;
+		this.mistakes = saved.mistakes;
+		this.hintsUsed = saved.hintsUsed;
+		this.cellsCompleted = saved.cellsCompleted;
+		this.totalCells = saved.totalCells;
+		this.pencilMode = saved.pencilMode;
+		this.comboCount = saved.comboCount;
+		this.bestCombo = saved.bestCombo;
+		this.undoStack = saved.undoStack;
+		this.maxMistakes = this.mode === 'zen' || this.mode === 'practice' ? 999 : 3;
+		this.selectedRow = -1;
+		this.selectedCol = -1;
+		this.checkHighlightTimer = 0;
+		this.glowCells = [];
+		this.xpGained = 0;
+		this.selectedNum = 0;
+
+		for (let r = 0; r < 9; r++) {
+			for (let c = 0; c < 9; c++) {
+				const cell = this.cells[r][c];
+				const s = saved.board[r][c];
+				cell.value = s.value;
+				cell.solution = s.solution;
+				cell.isGiven = s.isGiven;
+				cell.pencilMarks = [...s.pencilMarks];
+			}
+		}
+
+		this.clearSavedGame();
+		this.updateGridVisuals();
+		this.setState('playing');
+		return true;
+	}
+
+	private clearSavedGame() {
+		try { localStorage.removeItem(STORAGE_KEY + 'savedgame'); } catch { /* noop */ }
+	}
+
+	// ===== RIPPLE CELEBRATION =====
+	private startRipple() {
+		this.rippleActive = true;
+		this.rippleTimer = 0;
+		this.rippleCells = [];
+		const centerR = 4, centerC = 4;
+		for (let r = 0; r < 9; r++) {
+			for (let c = 0; c < 9; c++) {
+				const dist = Math.abs(r - centerR) + Math.abs(c - centerC);
+				this.rippleCells.push({ r, c, delay: dist * 0.08 });
+			}
+		}
+	}
+
 	// ===== PERSISTENCE =====
 	private loadCareer() {
 		this.career = loadData('career', this.career);
@@ -1738,6 +1940,43 @@ class SudokuGame extends createSystem({
 			}
 		}
 
+		// Ripple celebration animation
+		if (this.rippleActive) {
+			this.rippleTimer += delta;
+			const t = this.theme;
+			const colors = [t.accent, t.placed, 0xffff00, 0xff44ff, t.given];
+			let allDone = true;
+			for (const rc of this.rippleCells) {
+				const elapsed = this.rippleTimer - rc.delay;
+				if (elapsed < 0) { allDone = false; continue; }
+				if (elapsed > 1.5) continue;
+				allDone = false;
+				const cell = this.cells[rc.r][rc.c];
+				const mat = cell.meshBg.material as MeshStandardMaterial;
+				const phase = elapsed * 4;
+				const colorIdx = Math.floor(phase) % colors.length;
+				const pulse = 0.3 + 0.7 * Math.abs(Math.sin(phase * Math.PI));
+				mat.color.set(colors[colorIdx]);
+				mat.emissive.set(colors[colorIdx]);
+				mat.emissiveIntensity = pulse * 0.8;
+
+				// Trigger particles at start of each cell's ripple
+				if (elapsed < delta + 0.01 && elapsed >= 0) {
+					const pos = this.cellPosition(rc.r, rc.c);
+					this.particles.burst(
+						this.gridGroup.position.x + pos.x,
+						this.gridGroup.position.y + pos.y,
+						this.gridGroup.position.z + 0.02,
+						colors[colorIdx], 3
+					);
+				}
+			}
+			if (allDone) {
+				this.rippleActive = false;
+				this.updateGridVisuals();
+			}
+		}
+
 		// Environment animation
 		for (const d of this.decorations) {
 			d.mesh.rotation.x += d.rotSpeed * delta;
@@ -1754,18 +1993,12 @@ class SudokuGame extends createSystem({
 		}
 
 		// XR controller input
-		const input = this.world.input;
-		if (input) {
-			try {
-				const triggerR = (input as any).getButtonValue?.('RightTrigger') ?? 0;
-				const bBtn = (input as any).getButtonValue?.('ButtonB') ?? 0;
-				const aBtn = (input as any).getButtonValue?.('ButtonA') ?? 0;
-
-				if (bBtn > 0.5 && this.state === 'playing') {
-					this.setState('paused');
-				}
-			} catch { /* no XR input */ }
-		}
+		try {
+			const right = (this.world.input as any).xr?.gamepads?.right;
+			if (right && right.getButtonDown?.('b-button') && this.state === 'playing') {
+				this.setState('paused');
+			}
+		} catch { /* no XR input available */ }
 	}
 }
 
@@ -1775,7 +2008,7 @@ async function main() {
 	if (!container) return;
 
 	const world = await World.create(container, {
-		xr: { offer: 'once' as const },
+		xr: { offer: 'once' },
 		render: {
 			fov: 60,
 			near: 0.01,
@@ -1788,7 +2021,7 @@ async function main() {
 			physics: false,
 			spatialUI: true,
 		},
-	} as any);
+	});
 
 	world.registerSystem(SudokuGame);
 }
