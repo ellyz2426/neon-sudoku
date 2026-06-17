@@ -424,6 +424,11 @@ class SudokuGame extends createSystem({
 	private countdownTimer = 0;
 	private achievementsUnlocked: Set<string> = new Set();
 	private achvPage = 0;
+	private comboCount = 0;
+	private bestCombo = 0;
+	private checkHighlightTimer = 0;
+	private glowCells: { r: number; c: number; timer: number }[] = [];
+	private xpGained = 0;
 
 	// Career stats
 	private career = {
@@ -756,6 +761,12 @@ class SudokuGame extends createSystem({
 			this.wireButton('numpad', 'btn-pencil', () => this.togglePencil());
 			this.wireButton('numpad', 'btn-hint', () => this.useHint());
 			this.wireButton('numpad', 'btn-undo', () => this.undoAction());
+			this.wireButton('numpad', 'btn-autopencil', () => this.autoPencil());
+			this.wireButton('numpad', 'btn-check', () => this.checkBoardErrors());
+			this.wireButton('numpad', 'btn-nav-up', () => this.navigateCell(-1, 0));
+			this.wireButton('numpad', 'btn-nav-down', () => this.navigateCell(1, 0));
+			this.wireButton('numpad', 'btn-nav-left', () => this.navigateCell(0, -1));
+			this.wireButton('numpad', 'btn-nav-right', () => this.navigateCell(0, 1));
 		});
 
 		this.tryWirePanel('pause', () => {
@@ -823,6 +834,7 @@ class SudokuGame extends createSystem({
 				this.timerRunning = true;
 				this.updateHud();
 				this.updateNumpad();
+				this.updateNumberCounts();
 				break;
 			case 'paused':
 				this.gridGroup.visible = true;
@@ -882,6 +894,11 @@ class SudokuGame extends createSystem({
 		this.selectedRow = -1;
 		this.selectedCol = -1;
 		this.maxMistakes = this.mode === 'zen' || this.mode === 'practice' ? 999 : 3;
+		this.comboCount = 0;
+		this.bestCombo = 0;
+		this.checkHighlightTimer = 0;
+		this.glowCells = [];
+		this.xpGained = 0;
 
 		// Set cell data
 		for (let r = 0; r < 9; r++) {
@@ -950,6 +967,7 @@ class SudokuGame extends createSystem({
 		if (n !== cell.solution) {
 			this.mistakes++;
 			this.career.totalMistakes++;
+			this.comboCount = 0;
 			this.audio.playConflict();
 			this.showToast(`Wrong! ${this.maxMistakes - this.mistakes} left`);
 
@@ -959,11 +977,31 @@ class SudokuGame extends createSystem({
 			}
 		} else {
 			if (oldVal !== n) this.cellsCompleted++;
+			this.comboCount++;
+			if (this.comboCount > this.bestCombo) this.bestCombo = this.comboCount;
 			this.audio.playPlace();
-			this.score += this.scoreForPlacement();
+			const comboMultiplier = Math.min(this.comboCount, 5);
+			this.score += this.scoreForPlacement() * comboMultiplier;
+
+			if (this.comboCount >= 3) {
+				this.showToast(`Combo x${this.comboCount}!`);
+			}
+
+			// Glow effect on correct placement
+			this.glowCells.push({ r: this.selectedRow, c: this.selectedCol, timer: 0.6 });
+			const pos = this.cellPosition(this.selectedRow, this.selectedCol);
+			this.particles.burst(
+				this.gridGroup.position.x + pos.x,
+				this.gridGroup.position.y + pos.y,
+				this.gridGroup.position.z + 0.02,
+				this.theme.placed, 6
+			);
 
 			// Remove this number from pencil marks in same row/col/box
 			this.clearPencilMarksFor(this.selectedRow, this.selectedCol, n);
+
+			// Check if digit fully placed
+			this.checkDigitComplete(n);
 
 			// Check completion
 			if (this.checkComplete()) {
@@ -974,6 +1012,7 @@ class SudokuGame extends createSystem({
 
 		this.updateGridVisuals();
 		this.updateHud();
+		this.updateNumberCounts();
 	}
 
 	private eraseCell() {
@@ -989,6 +1028,7 @@ class SudokuGame extends createSystem({
 		this.audio.playErase();
 		this.updateGridVisuals();
 		this.updateHud();
+		this.updateNumberCounts();
 	}
 
 	private togglePencil() {
@@ -1023,12 +1063,14 @@ class SudokuGame extends createSystem({
 		this.hintsUsed++;
 		this.career.totalHints++;
 		this.score = Math.max(0, this.score - 50);
+		this.comboCount = 0;
 		this.audio.playHint();
 		this.showToast('Hint used (-50 pts)');
 
 		this.selectedRow = hr;
 		this.selectedCol = hc;
 		this.clearPencilMarksFor(hr, hc, cell.value);
+		this.checkDigitComplete(cell.value);
 
 		if (this.checkComplete()) {
 			this.endGame(true);
@@ -1037,6 +1079,7 @@ class SudokuGame extends createSystem({
 
 		this.updateGridVisuals();
 		this.updateHud();
+		this.updateNumberCounts();
 	}
 
 	private undoAction() {
@@ -1057,6 +1100,7 @@ class SudokuGame extends createSystem({
 		this.audio.playUndo();
 		this.updateGridVisuals();
 		this.updateHud();
+		this.updateNumberCounts();
 	}
 
 	private clearPencilMarksFor(r: number, c: number, n: number) {
@@ -1068,6 +1112,101 @@ class SudokuGame extends createSystem({
 		for (let i = br; i < br + 3; i++)
 			for (let j = bc; j < bc + 3; j++)
 				this.cells[i][j].pencilMarks[n - 1] = false;
+	}
+
+	private checkDigitComplete(n: number) {
+		let count = 0;
+		for (let r = 0; r < 9; r++)
+			for (let c = 0; c < 9; c++)
+				if (this.cells[r][c].value === n && this.cells[r][c].value === this.cells[r][c].solution)
+					count++;
+		if (count === 9) {
+			this.showToast(`All ${n}'s placed!`);
+			// Flash all cells with this number
+			for (let r = 0; r < 9; r++)
+				for (let c = 0; c < 9; c++)
+					if (this.cells[r][c].value === n)
+						this.glowCells.push({ r, c, timer: 0.8 });
+		}
+	}
+
+	private autoPencil() {
+		if (this.state !== 'playing') return;
+		let marked = 0;
+		for (let r = 0; r < 9; r++) {
+			for (let c = 0; c < 9; c++) {
+				const cell = this.cells[r][c];
+				if (cell.value !== 0) continue;
+				for (let n = 1; n <= 9; n++) {
+					if (!cell.pencilMarks[n - 1] && this.isValidCandidate(r, c, n)) {
+						cell.pencilMarks[n - 1] = true;
+						marked++;
+					}
+				}
+			}
+		}
+		this.audio.playPencil();
+		this.showToast(marked > 0 ? `Auto: ${marked} notes added` : 'No new notes');
+		this.updateGridVisuals();
+	}
+
+	private isValidCandidate(r: number, c: number, n: number): boolean {
+		// Check row
+		for (let i = 0; i < 9; i++) if (this.cells[r][i].value === n) return false;
+		// Check col
+		for (let i = 0; i < 9; i++) if (this.cells[i][c].value === n) return false;
+		// Check box
+		const br = Math.floor(r / 3) * 3, bc = Math.floor(c / 3) * 3;
+		for (let i = br; i < br + 3; i++)
+			for (let j = bc; j < bc + 3; j++)
+				if (this.cells[i][j].value === n) return false;
+		return true;
+	}
+
+	private checkBoardErrors() {
+		if (this.state !== 'playing') return;
+		let errors = 0;
+		for (let r = 0; r < 9; r++) {
+			for (let c = 0; c < 9; c++) {
+				const cell = this.cells[r][c];
+				if (cell.value !== 0 && !cell.isGiven && cell.value !== cell.solution) {
+					errors++;
+					this.glowCells.push({ r, c, timer: 1.5 });
+				}
+			}
+		}
+		this.audio.playClick();
+		if (errors === 0) {
+			this.showToast('No errors found!');
+		} else {
+			this.showToast(`${errors} error${errors > 1 ? 's' : ''} highlighted`);
+		}
+		this.checkHighlightTimer = 1.5;
+	}
+
+	private updateNumberCounts() {
+		const counts = Array(10).fill(0); // counts[1..9] = how many correctly placed
+		for (let r = 0; r < 9; r++) {
+			for (let c = 0; c < 9; c++) {
+				const cell = this.cells[r][c];
+				if (cell.value > 0 && cell.value === cell.solution) {
+					counts[cell.value]++;
+				}
+			}
+		}
+		for (let n = 1; n <= 9; n++) {
+			const remaining = 9 - counts[n];
+			this.setText('numpad', `lbl-c${n}`, remaining > 0 ? `x${remaining}` : '✓');
+		}
+	}
+
+	private navigateCell(dr: number, dc: number) {
+		if (this.state !== 'playing') return;
+		let r = this.selectedRow < 0 ? 4 : this.selectedRow + dr;
+		let c = this.selectedCol < 0 ? 4 : this.selectedCol + dc;
+		r = Math.max(0, Math.min(8, r));
+		c = Math.max(0, Math.min(8, c));
+		this.selectCell(r, c);
 	}
 
 	private scoreForPlacement(): number {
@@ -1122,6 +1261,7 @@ class SudokuGame extends createSystem({
 
 			// XP
 			const xp = Math.floor(this.score / 10) + 20;
+			this.xpGained = xp;
 			this.career.xp += xp;
 			const oldLevel = this.career.level;
 			while (this.career.xp >= this.xpForLevel(this.career.level)) {
@@ -1250,8 +1390,10 @@ class SudokuGame extends createSystem({
 		}
 
 		this.setText('hud', 'lbl-mode', MODE_NAMES[this.mode]);
+		this.setText('hud', 'lbl-diff', this.difficulty.charAt(0).toUpperCase() + this.difficulty.slice(1));
 		this.setText('hud', 'lbl-mistakes', `${this.mistakes}/${this.maxMistakes < 100 ? this.maxMistakes : '--'}`);
 		this.setText('hud', 'lbl-score', `${this.score}`);
+		this.setText('hud', 'lbl-combo', this.comboCount > 1 ? `x${this.comboCount}` : 'x1');
 		const pct = this.totalCells > 0 ? Math.floor((this.cellsCompleted / this.totalCells) * 100) : 0;
 		this.setText('hud', 'lbl-progress', `${pct}%`);
 	}
@@ -1266,8 +1408,10 @@ class SudokuGame extends createSystem({
 		const mins = Math.floor(this.timer / 60);
 		const secs = Math.floor(this.timer % 60);
 		this.setText('gameover', 'lbl-time', `Time: ${mins}:${secs < 10 ? '0' : ''}${secs}`);
+		this.setText('gameover', 'lbl-combo', `Best Combo: x${this.bestCombo > 0 ? this.bestCombo : 1}`);
 		this.setText('gameover', 'lbl-mistakes', `Mistakes: ${this.mistakes}`);
 		this.setText('gameover', 'lbl-hints', `Hints: ${this.hintsUsed}`);
+		this.setText('gameover', 'lbl-xp', win ? `+${this.xpGained} XP` : '');
 		this.setText('gameover', 'lbl-mode', `${MODE_NAMES[this.mode]} - ${this.difficulty.charAt(0).toUpperCase() + this.difficulty.slice(1)}`);
 	}
 
@@ -1571,6 +1715,28 @@ class SudokuGame extends createSystem({
 
 		// Particles
 		this.particles.update(delta);
+
+		// Cell glow animations
+		for (let i = this.glowCells.length - 1; i >= 0; i--) {
+			const g = this.glowCells[i];
+			g.timer -= delta;
+			if (g.timer <= 0) {
+				this.glowCells.splice(i, 1);
+			} else {
+				const cell = this.cells[g.r][g.c];
+				const pulse = 0.3 + 0.7 * Math.sin(g.timer * 12);
+				const mat = cell.meshBg.material as MeshStandardMaterial;
+				mat.emissiveIntensity = 0.2 + pulse * 0.6;
+			}
+		}
+
+		// Check board highlight timer
+		if (this.checkHighlightTimer > 0) {
+			this.checkHighlightTimer -= delta;
+			if (this.checkHighlightTimer <= 0) {
+				this.updateGridVisuals();
+			}
+		}
 
 		// Environment animation
 		for (const d of this.decorations) {

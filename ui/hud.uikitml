@@ -1,12 +1,16 @@
-<container name="root" display="none" flex-direction="row" gap="8" padding="6" background-color="#001a1a" border-radius="8" border-width="1" border-color="#004444">
+<container name="root" display="none" flex-direction="row" gap="6" padding="6" background-color="#001a1a" border-radius="8" border-width="1" border-color="#004444">
   <text name="lbl-mode" font-size="10" color="#00ffff">Classic</text>
+  <text name="lbl-diff" font-size="9" color="#888888">Easy</text>
+  <text font-size="9" color="#333333">|</text>
   <text name="lbl-time" font-size="12" color="#00ff88" font-weight="bold">0:00</text>
-  <text font-size="9" color="#666666">|</text>
+  <text font-size="9" color="#333333">|</text>
   <text font-size="9" color="#888888">Err:</text>
   <text name="lbl-mistakes" font-size="10" color="#ff4444">0/3</text>
-  <text font-size="9" color="#666666">|</text>
-  <text font-size="9" color="#888888">Score:</text>
+  <text font-size="9" color="#333333">|</text>
+  <text name="lbl-combo" font-size="10" color="#ffaa00">x1</text>
+  <text font-size="9" color="#333333">|</text>
+  <text font-size="9" color="#888888">Pts:</text>
   <text name="lbl-score" font-size="10" color="#ffaa00">0</text>
-  <text font-size="9" color="#666666">|</text>
+  <text font-size="9" color="#333333">|</text>
   <text name="lbl-progress" font-size="10" color="#00ddff">0%</text>
 </container>

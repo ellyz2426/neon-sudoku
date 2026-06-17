@@ -1,11 +1,13 @@
-<container name="root" display="none" flex-direction="column" align-items="center" padding="16" background-color="#001a1a" border-radius="12" border-width="2" border-color="#00ffff" width="320" gap="6">
+<container name="root" display="none" flex-direction="column" align-items="center" padding="16" background-color="#001a1a" border-radius="12" border-width="2" border-color="#00ffff" width="320" gap="5">
   <text name="lbl-result" font-size="22" color="#00ff88" font-weight="bold" text-align="center">PUZZLE COMPLETE!</text>
   <text name="lbl-mode" font-size="12" color="#888888" text-align="center">Classic - Easy</text>
   <text name="lbl-score" font-size="16" color="#ffaa00" text-align="center">Score: 0</text>
   <text name="lbl-time" font-size="14" color="#00ddff" text-align="center">Time: 0:00</text>
+  <text name="lbl-combo" font-size="12" color="#ff8800" text-align="center">Best Combo: x1</text>
   <text name="lbl-mistakes" font-size="12" color="#ff4444" text-align="center">Mistakes: 0</text>
   <text name="lbl-hints" font-size="12" color="#00ff88" text-align="center">Hints: 0</text>
-  <container flex-direction="row" gap="8" margin-top="8">
+  <text name="lbl-xp" font-size="11" color="#aaddff" text-align="center">+0 XP</text>
+  <container flex-direction="row" gap="8" margin-top="6">
     <text name="btn-rematch" font-size="14" color="#00ffff" background-color="#003333" padding="8" border-radius="6" border-width="1" border-color="#00ffff" text-align="center" width="120" cursor="pointer">REMATCH</text>
     <text name="btn-menu" font-size="14" color="#888888" background-color="#111111" padding="8" border-radius="6" border-width="1" border-color="#444444" text-align="center" width="120" cursor="pointer">MENU</text>
   </container>

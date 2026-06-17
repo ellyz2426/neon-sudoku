@@ -6,11 +6,14 @@
   <text name="lbl-s3" font-size="10" color="#cccccc" text-align="left" width="280">Best Time: --:--</text>
   <text name="lbl-s4" font-size="10" color="#cccccc" text-align="left" width="280">Perfect Games: 0</text>
   <text name="lbl-s5" font-size="10" color="#cccccc" text-align="left" width="280">Best Streak: 0</text>
-  <text name="lbl-s6" font-size="10" color="#cccccc" text-align="left" width="280">Total Mistakes: 0</text>
-  <text name="lbl-s7" font-size="10" color="#cccccc" text-align="left" width="280">Total Hints: 0</text>
-  <text name="lbl-s8" font-size="10" color="#cccccc" text-align="left" width="280">Daily Done: 0</text>
-  <text name="lbl-s9" font-size="10" color="#cccccc" text-align="left" width="280">Level: 1 (0 XP)</text>
-  <text name="lbl-s10" font-size="10" color="#cccccc" text-align="left" width="280">Easy Wins: 0</text>
-  <text name="lbl-s11" font-size="10" color="#cccccc" text-align="left" width="280">Hard Wins: 0</text>
+  <text name="lbl-s6" font-size="10" color="#cccccc" text-align="left" width="280">Best Combo: x1</text>
+  <text name="lbl-s7" font-size="10" color="#cccccc" text-align="left" width="280">Total Mistakes: 0</text>
+  <text name="lbl-s8" font-size="10" color="#cccccc" text-align="left" width="280">Total Hints: 0</text>
+  <text name="lbl-s9" font-size="10" color="#cccccc" text-align="left" width="280">Daily Done: 0</text>
+  <text name="lbl-s10" font-size="10" color="#cccccc" text-align="left" width="280">Level: 1 (0 XP)</text>
+  <text name="lbl-s11" font-size="10" color="#cccccc" text-align="left" width="280">Easy: 0 | Medium: 0</text>
+  <text name="lbl-s12" font-size="10" color="#cccccc" text-align="left" width="280">Hard: 0 | Expert: 0</text>
+  <text name="lbl-s13" font-size="10" color="#cccccc" text-align="left" width="280">Rows Cleared: 0</text>
+  <text name="lbl-s14" font-size="10" color="#cccccc" text-align="left" width="280">Numbers Completed: 0</text>
   <text name="btn-back" font-size="12" color="#888888" background-color="#111111" padding="4" border-radius="4" text-align="center" width="120" cursor="pointer" margin-top="4">BACK</text>
 </container>
