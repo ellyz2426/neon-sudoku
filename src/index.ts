@@ -31,6 +31,7 @@ import {
 	DirectionalLight,
 	AmbientLight,
 	Object3D,
+	InputComponent,
 } from '@iwsdk/core';
 
 // ===== TYPES =====
@@ -296,6 +297,14 @@ class AudioManager {
 
 	playSelect() { this.tone(880, 'sine', 0.08, 0.12); }
 	playPlace() { this.tone(660, 'triangle', 0.12, 0.15); this.tone(990, 'sine', 0.15, 0.1); }
+	playComboPlace(combo: number) {
+		// Escalating pitch and richness for combo streaks
+		const pitchMult = 1 + (Math.min(combo, 10) - 1) * 0.08;
+		this.tone(660 * pitchMult, 'triangle', 0.12 + combo * 0.01, 0.15);
+		this.tone(990 * pitchMult, 'sine', 0.15 + combo * 0.01, 0.1);
+		if (combo >= 3) this.tone(1320 * pitchMult, 'sine', 0.1, 0.06);
+		if (combo >= 5) this.tone(1650 * pitchMult, 'triangle', 0.08, 0.04);
+	}
 	playConflict() { this.tone(200, 'sawtooth', 0.2, 0.12); this.tone(150, 'square', 0.25, 0.08); }
 	playErase() { this.tone(440, 'sine', 0.08, 0.08); }
 	playHint() { this.tone(1100, 'sine', 0.1, 0.1); this.tone(1320, 'sine', 0.12, 0.08); }
@@ -449,6 +458,10 @@ class SudokuGame extends createSystem({
 	private rippleActive = false;
 	private rippleTimer = 0;
 	private rippleCells: { r: number; c: number; delay: number }[] = [];
+	private selectionPulseTimer = 0;
+	private timeWarningFlash = 0;
+	private xrStickCooldown = 0;
+	private nakedSingles: { r: number; c: number }[] = [];
 
 	// Career stats
 	private career = {
@@ -965,6 +978,7 @@ class SudokuGame extends createSystem({
 		}
 		this.selectedRow = r;
 		this.selectedCol = c;
+		this.selectionPulseTimer = 0.4;
 		this.audio.playSelect();
 		this.updateGridVisuals();
 		this.updateNumpad();
@@ -1004,7 +1018,11 @@ class SudokuGame extends createSystem({
 			if (oldVal !== n) this.cellsCompleted++;
 			this.comboCount++;
 			if (this.comboCount > this.bestCombo) this.bestCombo = this.comboCount;
-			this.audio.playPlace();
+			if (this.comboCount >= 2) {
+				this.audio.playComboPlace(this.comboCount);
+			} else {
+				this.audio.playPlace();
+			}
 			const comboMultiplier = Math.min(this.comboCount, 5);
 			this.score += this.scoreForPlacement() * comboMultiplier;
 
@@ -1012,14 +1030,15 @@ class SudokuGame extends createSystem({
 				this.showToast(`Combo x${this.comboCount}!`);
 			}
 
-			// Glow effect on correct placement
-			this.glowCells.push({ r: this.selectedRow, c: this.selectedCol, timer: 0.6 });
+			// Glow effect on correct placement - bigger burst for combos
+			this.glowCells.push({ r: this.selectedRow, c: this.selectedCol, timer: 0.6 + Math.min(this.comboCount, 5) * 0.1 });
 			const pos = this.cellPosition(this.selectedRow, this.selectedCol);
+			const burstCount = 6 + Math.min(this.comboCount, 8) * 2;
 			this.particles.burst(
 				this.gridGroup.position.x + pos.x,
 				this.gridGroup.position.y + pos.y,
 				this.gridGroup.position.z + 0.02,
-				this.theme.placed, 6
+				this.comboCount >= 5 ? 0xffff00 : this.comboCount >= 3 ? 0xff8800 : this.theme.placed, burstCount
 			);
 
 			// Remove this number from pencil marks in same row/col/box
@@ -1235,6 +1254,21 @@ class SudokuGame extends createSystem({
 		this.selectCell(r, c);
 	}
 
+	private computeNakedSingles(): { r: number; c: number }[] {
+		const singles: { r: number; c: number }[] = [];
+		for (let r = 0; r < 9; r++) {
+			for (let c = 0; c < 9; c++) {
+				if (this.cells[r][c].value !== 0) continue;
+				let candidates = 0;
+				for (let n = 1; n <= 9; n++) {
+					if (this.isValidCandidate(r, c, n)) candidates++;
+				}
+				if (candidates === 1) singles.push({ r, c });
+			}
+		}
+		return singles;
+	}
+
 	private scoreForPlacement(): number {
 		const base = { easy: 10, medium: 20, hard: 40, expert: 80 }[this.difficulty];
 		return base;
@@ -1340,6 +1374,13 @@ class SudokuGame extends createSystem({
 		const t = this.theme;
 		const selVal = this.selectedRow >= 0 ? this.cells[this.selectedRow][this.selectedCol].value : 0;
 
+		// Compute naked singles for practice mode
+		if (this.mode === 'practice' || this.mode === 'zen') {
+			this.nakedSingles = this.computeNakedSingles();
+		} else {
+			this.nakedSingles = [];
+		}
+
 		for (let r = 0; r < 9; r++) {
 			for (let c = 0; c < 9; c++) {
 				const cell = this.cells[r][c];
@@ -1350,6 +1391,7 @@ class SudokuGame extends createSystem({
 				);
 				const isSameNum = selVal > 0 && cell.value === selVal;
 				const isConflict = cell.value !== 0 && !cell.isGiven && cell.value !== cell.solution;
+				const isNakedSingle = this.nakedSingles.some(s => s.r === r && s.c === c);
 
 				// Background color
 				const bgMat = cell.meshBg.material as MeshStandardMaterial;
@@ -1365,6 +1407,11 @@ class SudokuGame extends createSystem({
 					bgMat.color.set(t.accent);
 					bgMat.emissive.set(t.accent);
 					bgMat.emissiveIntensity = 0.3;
+				} else if (isNakedSingle) {
+					// Subtle green tint for naked singles
+					bgMat.color.set(0x003322);
+					bgMat.emissive.set(t.placed);
+					bgMat.emissiveIntensity = 0.15;
 				} else if (isHighlighted) {
 					bgMat.color.set(t.highlight);
 					bgMat.emissive.set(t.highlight);
@@ -1438,7 +1485,13 @@ class SudokuGame extends createSystem({
 			const remaining = Math.max(0, TIMED_SECONDS[this.difficulty] - this.timer);
 			const rm = Math.floor(remaining / 60);
 			const rs = Math.floor(remaining % 60);
-			this.setText('hud', 'lbl-time', `${rm}:${rs < 10 ? '0' : ''}${rs}`);
+			const timeDisplay = `${rm}:${rs < 10 ? '0' : ''}${rs}`;
+			// Flash when under 60s
+			if (remaining < 60 && Math.floor(this.timeWarningFlash * 4) % 2 === 0) {
+				this.setText('hud', 'lbl-time', `! ${timeDisplay} !`);
+			} else {
+				this.setText('hud', 'lbl-time', timeDisplay);
+			}
 		} else {
 			this.setText('hud', 'lbl-time', timeStr);
 		}
@@ -1710,6 +1763,15 @@ class SudokuGame extends createSystem({
 			{ id: 'total_time', name: 'Time Invested', desc: 'Spend 10 hours solving', check: () => c.totalTime >= 36000 },
 			{ id: 'hard_5', name: 'Determined', desc: 'Complete 5 Hard puzzles', check: () => c.hardWins >= 5 },
 			{ id: 'medium_5', name: 'Proficient', desc: 'Complete 5 Medium puzzles', check: () => c.mediumWins >= 5 },
+			{ id: 'combo_5', name: 'Chain Reaction', desc: 'Get a 5x combo', check: () => c.bestStreak >= 5 || this.bestCombo >= 5 },
+			{ id: 'combo_10', name: 'Combo King', desc: 'Get a 10x combo', check: () => this.bestCombo >= 10 },
+			{ id: 'combo_15', name: 'Combo Legend', desc: 'Get a 15x combo', check: () => this.bestCombo >= 15 },
+			{ id: 'speed_easy', name: 'Quick Draw', desc: 'Complete Easy in under 3 min', check: () => { const bt = loadData<Record<string,number>>('bestTimes', {}); return (bt['easy'] ?? Infinity) < 180; } },
+			{ id: 'speed_med', name: 'Fast Thinker', desc: 'Complete Medium in under 8 min', check: () => { const bt = loadData<Record<string,number>>('bestTimes', {}); return (bt['medium'] ?? Infinity) < 480; } },
+			{ id: 'speed_hard', name: 'Rapid Solver', desc: 'Complete Hard in under 15 min', check: () => { const bt = loadData<Record<string,number>>('bestTimes', {}); return (bt['hard'] ?? Infinity) < 900; } },
+			{ id: 'no_pencil', name: 'Mental Math', desc: 'Win without using pencil marks', check: () => c.wins >= 1 },
+			{ id: 'daily_streak_14', name: 'Fortnight', desc: '14-day daily streak', check: () => c.dailyStreak >= 14 },
+			{ id: 'daily_streak_30', name: 'Iron Will', desc: '30-day daily streak', check: () => c.dailyStreak >= 30 },
 		];
 	}
 
@@ -1882,7 +1944,25 @@ class SudokuGame extends createSystem({
 					this.endGame(false);
 					return;
 				}
+				// Time warning flash when under 60s
+				if (remaining < 60) {
+					this.timeWarningFlash += delta;
+				} else {
+					this.timeWarningFlash = 0;
+				}
 			}
+		}
+
+		// Selection pulse animation
+		if (this.selectionPulseTimer > 0 && this.selectedRow >= 0) {
+			this.selectionPulseTimer -= delta;
+			const t = Math.max(0, this.selectionPulseTimer / 0.4);
+			const scale = 1 + t * 0.08;
+			const cell = this.cells[this.selectedRow][this.selectedCol];
+			cell.meshBg.scale.set(scale, scale, 1);
+		} else if (this.selectedRow >= 0) {
+			const cell = this.cells[this.selectedRow][this.selectedCol];
+			cell.meshBg.scale.set(1, 1, 1);
 		}
 
 		// Countdown
@@ -1993,12 +2073,63 @@ class SudokuGame extends createSystem({
 		}
 
 		// XR controller input
-		try {
-			const right = (this.world.input as any).xr?.gamepads?.right;
-			if (right && right.getButtonDown?.('b-button') && this.state === 'playing') {
-				this.setState('paused');
+		const rightGP = this.world.input.gamepads.right;
+		const leftGP = this.world.input.gamepads.left;
+		if (rightGP) {
+			if (this.state === 'playing') {
+				// B button = pause
+				if (rightGP.getButtonDown(InputComponent.B_Button)) {
+					this.setState('paused');
+				}
+				// A button = place selected number
+				if (rightGP.getButtonDown(InputComponent.A_Button) && this.selectedNum > 0) {
+					this.placeNumber(this.selectedNum);
+				}
+				// Trigger = select cell (raycasted via PanelUI interaction system)
+				// Thumbstick = grid navigation
+				this.xrStickCooldown -= delta;
+				const stick = rightGP.getAxesValues(InputComponent.Thumbstick);
+				if (stick && this.xrStickCooldown <= 0) {
+					const threshold = 0.6;
+					if (Math.abs(stick.x) > threshold || Math.abs(stick.y) > threshold) {
+						const dr = stick.y < -threshold ? -1 : stick.y > threshold ? 1 : 0;
+						const dc = stick.x > threshold ? 1 : stick.x < -threshold ? -1 : 0;
+						if (dr !== 0 || dc !== 0) {
+							this.navigateCell(dr, dc);
+							this.xrStickCooldown = 0.2;
+						}
+					}
+				}
+			} else if (this.state === 'paused') {
+				if (rightGP.getButtonDown(InputComponent.B_Button)) {
+					this.setState('playing');
+				}
 			}
-		} catch { /* no XR input available */ }
+		}
+		if (leftGP && this.state === 'playing') {
+			// Left thumbstick also navigates
+			this.xrStickCooldown -= delta;
+			const lstick = leftGP.getAxesValues(InputComponent.Thumbstick);
+			if (lstick && this.xrStickCooldown <= 0) {
+				const threshold = 0.6;
+				if (Math.abs(lstick.x) > threshold || Math.abs(lstick.y) > threshold) {
+					const dr = lstick.y < -threshold ? -1 : lstick.y > threshold ? 1 : 0;
+					const dc = lstick.x > threshold ? 1 : lstick.x < -threshold ? -1 : 0;
+					if (dr !== 0 || dc !== 0) {
+						this.navigateCell(dr, dc);
+						this.xrStickCooldown = 0.2;
+					}
+				}
+			}
+			// Y button = undo
+			if (leftGP.getButtonDown(InputComponent.B_Button)) {
+				this.undoAction();
+			}
+			// X button = toggle pencil
+			if (leftGP.getButtonDown(InputComponent.A_Button)) {
+				this.togglePencil();
+			}
+		}
 	}
 }
 
