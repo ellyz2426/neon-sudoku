@@ -1,0 +1,500 @@
+{
+  "element": {
+    "sourceTag": "container",
+    "type": "custom",
+    "children": [
+      {
+        "sourceTag": "text",
+        "type": "custom",
+        "children": [
+          "HOW TO PLAY"
+        ],
+        "properties": {
+          "fontSize": "18",
+          "color": "#888888",
+          "fontWeight": "bold",
+          "textAlign": "center"
+        },
+        "dataUid": "uid-2"
+      },
+      {
+        "sourceTag": "text",
+        "type": "custom",
+        "children": [
+          "Fill every cell so each row, column, and 3x3 box contains digits 1-9 exactly once."
+        ],
+        "properties": {
+          "fontSize": "10",
+          "color": "#aaaaaa",
+          "textAlign": "left",
+          "width": "300"
+        },
+        "dataUid": "uid-3"
+      },
+      {
+        "sourceTag": "text",
+        "type": "custom",
+        "children": [
+          "Browser Controls:"
+        ],
+        "properties": {
+          "fontSize": "11",
+          "color": "#00ffff",
+          "textAlign": "left",
+          "width": "300",
+          "marginTop": "4"
+        },
+        "dataUid": "uid-4"
+      },
+      {
+        "sourceTag": "text",
+        "type": "custom",
+        "children": [
+          "Click cell to select, 1-9 to place"
+        ],
+        "properties": {
+          "fontSize": "9",
+          "color": "#cccccc",
+          "textAlign": "left",
+          "width": "300"
+        },
+        "dataUid": "uid-5"
+      },
+      {
+        "sourceTag": "text",
+        "type": "custom",
+        "children": [
+          "Arrow keys to navigate grid"
+        ],
+        "properties": {
+          "fontSize": "9",
+          "color": "#cccccc",
+          "textAlign": "left",
+          "width": "300"
+        },
+        "dataUid": "uid-6"
+      },
+      {
+        "sourceTag": "text",
+        "type": "custom",
+        "children": [
+          "P = pencil mode, H = hint, Z = undo"
+        ],
+        "properties": {
+          "fontSize": "9",
+          "color": "#cccccc",
+          "textAlign": "left",
+          "width": "300"
+        },
+        "dataUid": "uid-7"
+      },
+      {
+        "sourceTag": "text",
+        "type": "custom",
+        "children": [
+          "Backspace/Delete/0 = erase, ESC = pause"
+        ],
+        "properties": {
+          "fontSize": "9",
+          "color": "#cccccc",
+          "textAlign": "left",
+          "width": "300"
+        },
+        "dataUid": "uid-8"
+      },
+      {
+        "sourceTag": "text",
+        "type": "custom",
+        "children": [
+          "VR Controls:"
+        ],
+        "properties": {
+          "fontSize": "11",
+          "color": "#00ffff",
+          "textAlign": "left",
+          "width": "300",
+          "marginTop": "4"
+        },
+        "dataUid": "uid-9"
+      },
+      {
+        "sourceTag": "text",
+        "type": "custom",
+        "children": [
+          "Laser pointer to select cells"
+        ],
+        "properties": {
+          "fontSize": "9",
+          "color": "#cccccc",
+          "textAlign": "left",
+          "width": "300"
+        },
+        "dataUid": "uid-10"
+      },
+      {
+        "sourceTag": "text",
+        "type": "custom",
+        "children": [
+          "Numpad panel for number input"
+        ],
+        "properties": {
+          "fontSize": "9",
+          "color": "#cccccc",
+          "textAlign": "left",
+          "width": "300"
+        },
+        "dataUid": "uid-11"
+      },
+      {
+        "sourceTag": "text",
+        "type": "custom",
+        "children": [
+          "B = pause"
+        ],
+        "properties": {
+          "fontSize": "9",
+          "color": "#cccccc",
+          "textAlign": "left",
+          "width": "300"
+        },
+        "dataUid": "uid-12"
+      },
+      {
+        "sourceTag": "text",
+        "type": "custom",
+        "children": [
+          "Modes:"
+        ],
+        "properties": {
+          "fontSize": "11",
+          "color": "#ffaa00",
+          "textAlign": "left",
+          "width": "300",
+          "marginTop": "4"
+        },
+        "dataUid": "uid-13"
+      },
+      {
+        "sourceTag": "text",
+        "type": "custom",
+        "children": [
+          "Classic: solve at your own pace"
+        ],
+        "properties": {
+          "fontSize": "9",
+          "color": "#cccccc",
+          "textAlign": "left",
+          "width": "300"
+        },
+        "dataUid": "uid-14"
+      },
+      {
+        "sourceTag": "text",
+        "type": "custom",
+        "children": [
+          "Timed: beat the clock"
+        ],
+        "properties": {
+          "fontSize": "9",
+          "color": "#cccccc",
+          "textAlign": "left",
+          "width": "300"
+        },
+        "dataUid": "uid-15"
+      },
+      {
+        "sourceTag": "text",
+        "type": "custom",
+        "children": [
+          "Daily: same puzzle for everyone"
+        ],
+        "properties": {
+          "fontSize": "9",
+          "color": "#cccccc",
+          "textAlign": "left",
+          "width": "300"
+        },
+        "dataUid": "uid-16"
+      },
+      {
+        "sourceTag": "text",
+        "type": "custom",
+        "children": [
+          "Zen: no mistakes limit, relax"
+        ],
+        "properties": {
+          "fontSize": "9",
+          "color": "#cccccc",
+          "textAlign": "left",
+          "width": "300"
+        },
+        "dataUid": "uid-17"
+      },
+      {
+        "sourceTag": "text",
+        "type": "custom",
+        "children": [
+          "Speed: quick puzzles"
+        ],
+        "properties": {
+          "fontSize": "9",
+          "color": "#cccccc",
+          "textAlign": "left",
+          "width": "300"
+        },
+        "dataUid": "uid-18"
+      },
+      {
+        "sourceTag": "text",
+        "type": "custom",
+        "children": [
+          "Practice: hints + no pressure"
+        ],
+        "properties": {
+          "fontSize": "9",
+          "color": "#cccccc",
+          "textAlign": "left",
+          "width": "300"
+        },
+        "dataUid": "uid-19"
+      },
+      {
+        "sourceTag": "text",
+        "type": "custom",
+        "children": [
+          "BACK"
+        ],
+        "properties": {
+          "name": "btn-back",
+          "fontSize": "12",
+          "color": "#888888",
+          "backgroundColor": "#111111",
+          "padding": "4",
+          "borderRadius": "4",
+          "textAlign": "center",
+          "width": "120",
+          "cursor": "pointer",
+          "marginTop": "4"
+        },
+        "dataUid": "uid-20"
+      }
+    ],
+    "properties": {
+      "name": "root",
+      "display": "none",
+      "flexDirection": "column",
+      "alignItems": "center",
+      "padding": "12",
+      "backgroundColor": "#001a1a",
+      "borderRadius": "12",
+      "borderWidth": "2",
+      "borderColor": "#888888",
+      "width": "340",
+      "gap": "4"
+    },
+    "dataUid": "uid-1"
+  },
+  "classes": {},
+  "ranges": {
+    "uid-1": {
+      "start": {
+        "line": 0,
+        "column": 0
+      },
+      "end": {
+        "line": 20,
+        "column": 12
+      }
+    },
+    "uid-2": {
+      "start": {
+        "line": 1,
+        "column": 2
+      },
+      "end": {
+        "line": 1,
+        "column": 96
+      }
+    },
+    "uid-3": {
+      "start": {
+        "line": 2,
+        "column": 2
+      },
+      "end": {
+        "line": 2,
+        "column": 158
+      }
+    },
+    "uid-4": {
+      "start": {
+        "line": 3,
+        "column": 2
+      },
+      "end": {
+        "line": 3,
+        "column": 108
+      }
+    },
+    "uid-5": {
+      "start": {
+        "line": 4,
+        "column": 2
+      },
+      "end": {
+        "line": 4,
+        "column": 109
+      }
+    },
+    "uid-6": {
+      "start": {
+        "line": 5,
+        "column": 2
+      },
+      "end": {
+        "line": 5,
+        "column": 102
+      }
+    },
+    "uid-7": {
+      "start": {
+        "line": 6,
+        "column": 2
+      },
+      "end": {
+        "line": 6,
+        "column": 110
+      }
+    },
+    "uid-8": {
+      "start": {
+        "line": 7,
+        "column": 2
+      },
+      "end": {
+        "line": 7,
+        "column": 114
+      }
+    },
+    "uid-9": {
+      "start": {
+        "line": 8,
+        "column": 2
+      },
+      "end": {
+        "line": 8,
+        "column": 103
+      }
+    },
+    "uid-10": {
+      "start": {
+        "line": 9,
+        "column": 2
+      },
+      "end": {
+        "line": 9,
+        "column": 104
+      }
+    },
+    "uid-11": {
+      "start": {
+        "line": 10,
+        "column": 2
+      },
+      "end": {
+        "line": 10,
+        "column": 104
+      }
+    },
+    "uid-12": {
+      "start": {
+        "line": 11,
+        "column": 2
+      },
+      "end": {
+        "line": 11,
+        "column": 84
+      }
+    },
+    "uid-13": {
+      "start": {
+        "line": 12,
+        "column": 2
+      },
+      "end": {
+        "line": 12,
+        "column": 97
+      }
+    },
+    "uid-14": {
+      "start": {
+        "line": 13,
+        "column": 2
+      },
+      "end": {
+        "line": 13,
+        "column": 106
+      }
+    },
+    "uid-15": {
+      "start": {
+        "line": 14,
+        "column": 2
+      },
+      "end": {
+        "line": 14,
+        "column": 96
+      }
+    },
+    "uid-16": {
+      "start": {
+        "line": 15,
+        "column": 2
+      },
+      "end": {
+        "line": 15,
+        "column": 106
+      }
+    },
+    "uid-17": {
+      "start": {
+        "line": 16,
+        "column": 2
+      },
+      "end": {
+        "line": 16,
+        "column": 104
+      }
+    },
+    "uid-18": {
+      "start": {
+        "line": 17,
+        "column": 2
+      },
+      "end": {
+        "line": 17,
+        "column": 95
+      }
+    },
+    "uid-19": {
+      "start": {
+        "line": 18,
+        "column": 2
+      },
+      "end": {
+        "line": 18,
+        "column": 104
+      }
+    },
+    "uid-20": {
+      "start": {
+        "line": 19,
+        "column": 2
+      },
+      "end": {
+        "line": 19,
+        "column": 187
+      }
+    }
+  }
+}

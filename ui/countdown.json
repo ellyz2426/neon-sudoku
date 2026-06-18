@@ -1,0 +1,57 @@
+{
+  "element": {
+    "sourceTag": "container",
+    "type": "custom",
+    "children": [
+      {
+        "sourceTag": "text",
+        "type": "custom",
+        "children": [
+          "3"
+        ],
+        "properties": {
+          "name": "lbl-count",
+          "fontSize": "36",
+          "color": "#00ffff",
+          "fontWeight": "bold",
+          "textAlign": "center"
+        },
+        "dataUid": "uid-2"
+      }
+    ],
+    "properties": {
+      "name": "root",
+      "display": "none",
+      "padding": "12",
+      "backgroundColor": "#001a1a",
+      "borderRadius": "12",
+      "borderWidth": "2",
+      "borderColor": "#00ffff",
+      "alignItems": "center"
+    },
+    "dataUid": "uid-1"
+  },
+  "classes": {},
+  "ranges": {
+    "uid-1": {
+      "start": {
+        "line": 0,
+        "column": 0
+      },
+      "end": {
+        "line": 2,
+        "column": 12
+      }
+    },
+    "uid-2": {
+      "start": {
+        "line": 1,
+        "column": 2
+      },
+      "end": {
+        "line": 1,
+        "column": 103
+      }
+    }
+  }
+}
