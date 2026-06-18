@@ -20,5 +20,10 @@
     <text name="lbl-theme" font-size="11" color="#00ffff" width="140" text-align="center">Neon Holodeck</text>
     <text name="btn-theme-next" font-size="12" color="#888888" background-color="#111111" padding="4" border-radius="4" width="28" text-align="center" cursor="pointer">&gt;</text>
   </container>
+  <container flex-direction="row" gap="4" align-items="center" margin-top="4">
+    <text name="btn-err-down" font-size="12" color="#888888" background-color="#111111" padding="4" border-radius="4" width="28" text-align="center" cursor="pointer">-</text>
+    <text name="lbl-errlimit" font-size="11" color="#ff6666" width="130" text-align="center">Errors: 3</text>
+    <text name="btn-err-up" font-size="12" color="#888888" background-color="#111111" padding="4" border-radius="4" width="28" text-align="center" cursor="pointer">+</text>
+  </container>
   <text name="btn-back" font-size="12" color="#888888" background-color="#111111" padding="4" border-radius="4" text-align="center" width="120" cursor="pointer" margin-top="6">BACK</text>
 </container>

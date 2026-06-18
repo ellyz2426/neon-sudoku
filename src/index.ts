@@ -464,6 +464,11 @@ class SudokuGame extends createSystem({
 	private nakedSingles: { r: number; c: number }[] = [];
 	private digitPlaceAnims: { r: number; c: number; timer: number }[] = [];
 	private lineCompleteCells: { r: number; c: number; timer: number }[] = [];
+	private errorLimitSetting = 3; // 3, 5, or 999 (unlimited)
+	private lbFilter: 'all' | Difficulty = 'all';
+	private gridEntranceTimer = 0;
+	private gridEntranceActive = false;
+	private bestStars: Record<Difficulty, number> = { easy: 0, medium: 0, hard: 0, expert: 0 };
 
 	// Career stats
 	private career = {
@@ -820,6 +825,11 @@ class SudokuGame extends createSystem({
 
 		this.tryWirePanel('lb', () => {
 			this.wireButton('lb', 'btn-back', () => { this.audio.playClick(); this.setState('title'); });
+			this.wireButton('lb', 'btn-filt-all', () => { this.audio.playClick(); this.lbFilter = 'all'; this.updateLeaderboardPanel(); });
+			this.wireButton('lb', 'btn-filt-easy', () => { this.audio.playClick(); this.lbFilter = 'easy'; this.updateLeaderboardPanel(); });
+			this.wireButton('lb', 'btn-filt-med', () => { this.audio.playClick(); this.lbFilter = 'medium'; this.updateLeaderboardPanel(); });
+			this.wireButton('lb', 'btn-filt-hard', () => { this.audio.playClick(); this.lbFilter = 'hard'; this.updateLeaderboardPanel(); });
+			this.wireButton('lb', 'btn-filt-exp', () => { this.audio.playClick(); this.lbFilter = 'expert'; this.updateLeaderboardPanel(); });
 		});
 
 		this.tryWirePanel('achv', () => {
@@ -837,6 +847,8 @@ class SudokuGame extends createSystem({
 			this.wireButton('settings', 'btn-music-down', () => { this.audio.musicVol = Math.max(0, this.audio.musicVol - 0.1); this.audio.updateVolumes(); this.updateSettingsPanel(); });
 			this.wireButton('settings', 'btn-theme-prev', () => { this.themeIdx = (this.themeIdx - 1 + THEMES.length) % THEMES.length; this.applyTheme(); this.updateSettingsPanel(); });
 			this.wireButton('settings', 'btn-theme-next', () => { this.themeIdx = (this.themeIdx + 1) % THEMES.length; this.applyTheme(); this.updateSettingsPanel(); });
+			this.wireButton('settings', 'btn-err-up', () => { this.cycleErrorLimit(1); this.updateSettingsPanel(); });
+			this.wireButton('settings', 'btn-err-down', () => { this.cycleErrorLimit(-1); this.updateSettingsPanel(); });
 			this.wireButton('settings', 'btn-back', () => { this.audio.playClick(); this.saveSettings(); this.setState('title'); });
 		});
 
@@ -934,7 +946,7 @@ class SudokuGame extends createSystem({
 		this.pencilMode = false;
 		this.selectedRow = -1;
 		this.selectedCol = -1;
-		this.maxMistakes = this.mode === 'zen' || this.mode === 'practice' ? 999 : 3;
+		this.maxMistakes = this.mode === 'zen' || this.mode === 'practice' ? 999 : this.errorLimitSetting;
 		this.comboCount = 0;
 		this.bestCombo = 0;
 		this.checkHighlightTimer = 0;
@@ -954,6 +966,7 @@ class SudokuGame extends createSystem({
 
 		this.career.games++;
 		this.updateGridVisuals();
+		this.startGridEntrance();
 
 		// Start with countdown for timed modes
 		if (this.mode === 'timed' || this.mode === 'speed') {
@@ -1609,6 +1622,20 @@ class SudokuGame extends createSystem({
 
 	private updateGameOverPanel(win: boolean) {
 		this.setText('gameover', 'lbl-result', win ? 'PUZZLE COMPLETE!' : 'GAME OVER');
+		if (win) {
+			const stars = this.calcStarRating();
+			const starStr = '*'.repeat(stars) + '-'.repeat(3 - stars);
+			this.setText('gameover', 'lbl-stars', `[ ${starStr} ]`);
+			if (stars > (this.bestStars[this.difficulty] || 0)) {
+				this.bestStars[this.difficulty] = stars;
+				saveData('bestStars', this.bestStars);
+			}
+			const ratingLabel = stars === 3 ? 'Perfect!' : stars === 2 ? 'Great job!' : 'Good';
+			this.setText('gameover', 'lbl-rating', ratingLabel);
+		} else {
+			this.setText('gameover', 'lbl-stars', '');
+			this.setText('gameover', 'lbl-rating', '');
+		}
 		this.setText('gameover', 'lbl-score', `Score: ${this.score}`);
 		const mins = Math.floor(this.timer / 60);
 		const secs = Math.floor(this.timer % 60);
@@ -1621,9 +1648,10 @@ class SudokuGame extends createSystem({
 	}
 
 	private updateLeaderboardPanel() {
+		const filtered = this.lbFilter === 'all' ? this.leaderboard : this.leaderboard.filter(e => e.difficulty === this.lbFilter);
 		for (let i = 0; i < 10; i++) {
-			if (i < this.leaderboard.length) {
-				const e = this.leaderboard[i];
+			if (i < filtered.length) {
+				const e = filtered[i];
 				const mins = Math.floor(e.time / 60);
 				const secs = Math.floor(e.time % 60);
 				this.setText('lb', `lbl-r${i}`, `${i + 1}. ${e.score} pts - ${e.difficulty} ${mins}:${secs < 10 ? '0' : ''}${secs} (${e.date})`);
@@ -1658,6 +1686,15 @@ class SudokuGame extends createSystem({
 		this.setText('settings', 'lbl-sfx', `SFX: ${Math.round(this.audio.sfxVol * 100)}%`);
 		this.setText('settings', 'lbl-music', `Music: ${Math.round(this.audio.musicVol * 100)}%`);
 		this.setText('settings', 'lbl-theme', this.theme.name);
+		this.setText('settings', 'lbl-errlimit', `Errors: ${this.errorLimitSetting >= 999 ? 'Unlimited' : this.errorLimitSetting}`);
+	}
+
+	private cycleErrorLimit(dir: number) {
+		const options = [3, 5, 999];
+		const idx = options.indexOf(this.errorLimitSetting);
+		const next = (idx + dir + options.length) % options.length;
+		this.errorLimitSetting = options[next];
+		this.audio.playClick();
 	}
 
 	private updateStatsPanel() {
@@ -1881,6 +1918,17 @@ class SudokuGame extends createSystem({
 			{ id: 'medium_20', name: 'Consistent Solver', desc: 'Complete 20 Medium puzzles', check: () => c.mediumWins >= 20 },
 			{ id: 'level_15', name: 'Intermediate', desc: 'Reach level 15', check: () => c.level >= 15 },
 			{ id: 'total_time_5h', name: 'Dedicated Player', desc: 'Spend 5 hours solving', check: () => c.totalTime >= 18000 },
+			// Round 6 achievements
+			{ id: 'three_star_easy', name: 'Easy Ace', desc: '3-star an Easy puzzle', check: () => this.bestStars.easy >= 3 },
+			{ id: 'three_star_med', name: 'Medium Ace', desc: '3-star a Medium puzzle', check: () => this.bestStars.medium >= 3 },
+			{ id: 'three_star_hard', name: 'Hard Ace', desc: '3-star a Hard puzzle', check: () => this.bestStars.hard >= 3 },
+			{ id: 'three_star_expert', name: 'Expert Ace', desc: '3-star an Expert puzzle', check: () => this.bestStars.expert >= 3 },
+			{ id: 'all_three_star', name: 'Star Collector', desc: '3-star all 4 difficulties', check: () => this.bestStars.easy >= 3 && this.bestStars.medium >= 3 && this.bestStars.hard >= 3 && this.bestStars.expert >= 3 },
+			{ id: 'unlimited_win', name: 'Endurance', desc: 'Win with unlimited errors setting', check: () => this.errorLimitSetting >= 999 && c.wins >= 1 },
+			{ id: 'five_err_win', name: 'Second Chances', desc: 'Win with 5-error limit', check: () => c.wins >= 1 },
+			{ id: 'daily_50', name: 'Daily Devotee', desc: 'Complete 50 Daily Challenges', check: () => c.dailyDone >= 50 },
+			{ id: 'games_200', name: 'Obsessed', desc: 'Play 200 games', check: () => c.games >= 200 },
+			{ id: 'five_hundred_wins', name: 'Half Grand', desc: 'Complete 500 puzzles', check: () => c.wins >= 500 },
 		];
 	}
 
@@ -1980,7 +2028,7 @@ class SudokuGame extends createSystem({
 		this.comboCount = saved.comboCount;
 		this.bestCombo = saved.bestCombo;
 		this.undoStack = saved.undoStack;
-		this.maxMistakes = this.mode === 'zen' || this.mode === 'practice' ? 999 : 3;
+		this.maxMistakes = this.mode === 'zen' || this.mode === 'practice' ? 999 : this.errorLimitSetting;
 		this.selectedRow = -1;
 		this.selectedCol = -1;
 		this.checkHighlightTimer = 0;
@@ -2023,18 +2071,52 @@ class SudokuGame extends createSystem({
 		}
 	}
 
+	private startGridEntrance() {
+		this.gridEntranceActive = true;
+		this.gridEntranceTimer = 0;
+		// Initially hide all cells
+		for (let r = 0; r < 9; r++) {
+			for (let c = 0; c < 9; c++) {
+				const cell = this.cells[r][c];
+				cell.meshBg.scale.set(0, 0, 1);
+				cell.segmentGroup.scale.set(0, 0, 1);
+				for (const d of cell.pencilDots) d.visible = false;
+			}
+		}
+	}
+
 	// ===== PERSISTENCE =====
 	private loadCareer() {
 		this.career = loadData('career', this.career);
 		this.leaderboard = loadData('leaderboard', []);
 		this.achievementsUnlocked = new Set(loadData<string[]>('achievements', []));
 		this.themeIdx = loadData('theme', 0);
+		this.errorLimitSetting = loadData('errorLimit', 3);
+		this.bestStars = loadData('bestStars', { easy: 0, medium: 0, hard: 0, expert: 0 });
 	}
 
 	private saveCareer() { saveData('career', this.career); }
 	private saveLeaderboard() { saveData('leaderboard', this.leaderboard); }
 	private saveAchievements() { saveData('achievements', [...this.achievementsUnlocked]); }
-	private saveSettings() { saveData('theme', this.themeIdx); }
+	private saveSettings() { saveData('theme', this.themeIdx); saveData('errorLimit', this.errorLimitSetting); }
+
+	// ===== STAR RATING =====
+	private calcStarRating(): number {
+		// 3 stars: no mistakes, no hints, fast time
+		// 2 stars: <=1 mistake, <=1 hint, decent time
+		// 1 star: completed
+		const targetTimes: Record<Difficulty, [number, number]> = {
+			easy: [180, 360],       // 3-star < 3min, 2-star < 6min
+			medium: [360, 600],     // 3-star < 6min, 2-star < 10min
+			hard: [600, 1200],      // 3-star < 10min, 2-star < 20min
+			expert: [900, 1800],    // 3-star < 15min, 2-star < 30min
+		};
+		const [t3, t2] = targetTimes[this.difficulty];
+		let stars = 1;
+		if (this.mistakes <= 1 && this.hintsUsed <= 1 && this.timer < t2) stars = 2;
+		if (this.mistakes === 0 && this.hintsUsed === 0 && this.timer < t3) stars = 3;
+		return stars;
+	}
 
 
 	// ===== UPDATE LOOP =====
@@ -2154,6 +2236,44 @@ class SudokuGame extends createSystem({
 		if (this.checkHighlightTimer > 0) {
 			this.checkHighlightTimer -= delta;
 			if (this.checkHighlightTimer <= 0) {
+				this.updateGridVisuals();
+			}
+		}
+
+		// Grid entrance animation
+		if (this.gridEntranceActive) {
+			this.gridEntranceTimer += delta;
+			let allDone = true;
+			const centerR = 4, centerC = 4;
+			for (let r = 0; r < 9; r++) {
+				for (let c = 0; c < 9; c++) {
+					const dist = Math.abs(r - centerR) + Math.abs(c - centerC);
+					const cellDelay = dist * 0.04;
+					const elapsed = this.gridEntranceTimer - cellDelay;
+					if (elapsed < 0) { allDone = false; continue; }
+					const animDur = 0.25;
+					if (elapsed >= animDur) {
+						this.cells[r][c].meshBg.scale.set(1, 1, 1);
+						this.cells[r][c].segmentGroup.scale.set(1, 1, 1);
+					} else {
+						allDone = false;
+						const t2 = elapsed / animDur;
+						// Overshoot elastic ease
+						const s = 1 + 0.2 * Math.sin(t2 * Math.PI);
+						this.cells[r][c].meshBg.scale.set(s * t2, s * t2, 1);
+						this.cells[r][c].segmentGroup.scale.set(s * t2, s * t2, 1);
+					}
+				}
+			}
+			if (allDone) {
+				this.gridEntranceActive = false;
+				// Ensure all cells at correct scale
+				for (let r = 0; r < 9; r++) {
+					for (let c = 0; c < 9; c++) {
+						this.cells[r][c].meshBg.scale.set(1, 1, 1);
+						this.cells[r][c].segmentGroup.scale.set(1, 1, 1);
+					}
+				}
 				this.updateGridVisuals();
 			}
 		}
