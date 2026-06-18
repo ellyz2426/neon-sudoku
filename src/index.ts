@@ -462,6 +462,8 @@ class SudokuGame extends createSystem({
 	private timeWarningFlash = 0;
 	private xrStickCooldown = 0;
 	private nakedSingles: { r: number; c: number }[] = [];
+	private digitPlaceAnims: { r: number; c: number; timer: number }[] = [];
+	private lineCompleteCells: { r: number; c: number; timer: number }[] = [];
 
 	// Career stats
 	private career = {
@@ -807,6 +809,7 @@ class SudokuGame extends createSystem({
 		this.tryWirePanel('pause', () => {
 			this.wireButton('pause', 'btn-resume', () => { this.audio.playClick(); this.setState('playing'); });
 			this.wireButton('pause', 'btn-save-quit', () => { this.audio.playClick(); this.saveGameState(); this.showToast('Game saved!'); this.setState('title'); });
+			this.wireButton('pause', 'btn-reset', () => { this.audio.playClick(); this.resetBoard(); this.setState('playing'); });
 			this.wireButton('pause', 'btn-quit', () => { this.audio.playClick(); this.clearSavedGame(); this.setState('title'); });
 		});
 
@@ -1032,6 +1035,8 @@ class SudokuGame extends createSystem({
 
 			// Glow effect on correct placement - bigger burst for combos
 			this.glowCells.push({ r: this.selectedRow, c: this.selectedCol, timer: 0.6 + Math.min(this.comboCount, 5) * 0.1 });
+			// Digit scale-up animation
+			this.digitPlaceAnims.push({ r: this.selectedRow, c: this.selectedCol, timer: 0.3 });
 			const pos = this.cellPosition(this.selectedRow, this.selectedCol);
 			const burstCount = 6 + Math.min(this.comboCount, 8) * 2;
 			this.particles.burst(
@@ -1046,6 +1051,9 @@ class SudokuGame extends createSystem({
 
 			// Check if digit fully placed
 			this.checkDigitComplete(n);
+
+			// Check if row/column/box is complete
+			this.checkLineComplete(this.selectedRow, this.selectedCol);
 
 			// Check completion
 			if (this.checkComplete()) {
@@ -1084,15 +1092,23 @@ class SudokuGame extends createSystem({
 
 	private useHint() {
 		if (this.state !== 'playing') return;
-		// Find a random empty cell and fill it
-		const empties: [number, number][] = [];
-		for (let r = 0; r < 9; r++)
-			for (let c = 0; c < 9; c++)
-				if (!this.cells[r][c].isGiven && this.cells[r][c].value !== this.cells[r][c].solution)
-					empties.push([r, c]);
+		// Prioritize naked singles (cells with only 1 valid candidate)
+		const singles = this.computeNakedSingles();
+		let hr: number, hc: number;
 
-		if (empties.length === 0) return;
-		const [hr, hc] = empties[Math.floor(Math.random() * empties.length)];
+		if (singles.length > 0) {
+			const pick = singles[Math.floor(Math.random() * singles.length)];
+			hr = pick.r; hc = pick.c;
+		} else {
+			// Fall back to random empty cell
+			const empties: [number, number][] = [];
+			for (let r = 0; r < 9; r++)
+				for (let c = 0; c < 9; c++)
+					if (!this.cells[r][c].isGiven && this.cells[r][c].value !== this.cells[r][c].solution)
+						empties.push([r, c]);
+			if (empties.length === 0) return;
+			[hr, hc] = empties[Math.floor(Math.random() * empties.length)];
+		}
 		const cell = this.cells[hr][hc];
 
 		this.undoStack.push({ r: hr, c: hc, oldVal: cell.value, oldPencil: [...cell.pencilMarks] });
@@ -1116,6 +1132,7 @@ class SudokuGame extends createSystem({
 		this.selectedCol = hc;
 		this.clearPencilMarksFor(hr, hc, cell.value);
 		this.checkDigitComplete(cell.value);
+		this.checkLineComplete(hr, hc);
 
 		if (this.checkComplete()) {
 			this.endGame(true);
@@ -1173,6 +1190,75 @@ class SudokuGame extends createSystem({
 					if (this.cells[r][c].value === n)
 						this.glowCells.push({ r, c, timer: 0.8 });
 		}
+	}
+
+	private checkLineComplete(placedR: number, placedC: number) {
+		// Check if the row containing placedR is complete
+		let rowComplete = true;
+		for (let c = 0; c < 9; c++) {
+			if (this.cells[placedR][c].value !== this.cells[placedR][c].solution) { rowComplete = false; break; }
+		}
+		if (rowComplete) {
+			this.showToast(`Row ${placedR + 1} complete!`);
+			for (let c = 0; c < 9; c++) this.lineCompleteCells.push({ r: placedR, c, timer: 1.0 });
+			this.score += 25;
+			this.audio.playPlace();
+		}
+
+		// Check if the column containing placedC is complete
+		let colComplete = true;
+		for (let r = 0; r < 9; r++) {
+			if (this.cells[r][placedC].value !== this.cells[r][placedC].solution) { colComplete = false; break; }
+		}
+		if (colComplete) {
+			this.showToast(`Column ${placedC + 1} complete!`);
+			for (let r = 0; r < 9; r++) this.lineCompleteCells.push({ r, c: placedC, timer: 1.0 });
+			this.score += 25;
+			this.audio.playPlace();
+		}
+
+		// Check if the 3x3 box is complete
+		const br = Math.floor(placedR / 3) * 3, bc = Math.floor(placedC / 3) * 3;
+		let boxComplete = true;
+		for (let r = br; r < br + 3; r++)
+			for (let c = bc; c < bc + 3; c++)
+				if (this.cells[r][c].value !== this.cells[r][c].solution) { boxComplete = false; break; }
+		if (boxComplete) {
+			this.showToast('Box complete!');
+			for (let r = br; r < br + 3; r++)
+				for (let c = bc; c < bc + 3; c++)
+					this.lineCompleteCells.push({ r, c, timer: 1.0 });
+			this.score += 25;
+			this.audio.playPlace();
+		}
+	}
+
+	private resetBoard() {
+		for (let r = 0; r < 9; r++) {
+			for (let c = 0; c < 9; c++) {
+				const cell = this.cells[r][c];
+				if (!cell.isGiven) {
+					if (cell.value === cell.solution) this.cellsCompleted--;
+					cell.value = 0;
+					cell.pencilMarks = Array(9).fill(false);
+				}
+			}
+		}
+		this.cellsCompleted = Math.max(0, this.cellsCompleted);
+		this.mistakes = 0;
+		this.score = 0;
+		this.comboCount = 0;
+		this.bestCombo = 0;
+		this.undoStack = [];
+		this.selectedRow = -1;
+		this.selectedCol = -1;
+		this.selectedNum = 0;
+		this.audio.playErase();
+		this.showToast('Board reset!');
+		this.updateGridVisuals();
+		this.updateHud();
+		this.updateNumberCounts();
+		this.updateNumpadHighlight();
 	}
 
 	private autoPencil() {
@@ -1392,6 +1478,11 @@ class SudokuGame extends createSystem({
 				const isSameNum = selVal > 0 && cell.value === selVal;
 				const isConflict = cell.value !== 0 && !cell.isGiven && cell.value !== cell.solution;
 				const isNakedSingle = this.nakedSingles.some(s => s.r === r && s.c === c);
+				// Candidate highlighting: when a number is selected on numpad, show where it's valid
+				const isCandidate = this.selectedNum > 0 && cell.value === 0 && this.isValidCandidate(r, c, this.selectedNum);
+				// Region coloring: alternate 3x3 box tints
+				const boxIdx = Math.floor(r / 3) * 3 + Math.floor(c / 3);
+				const isDarkBox = boxIdx % 2 === 0;
 
 				// Background color
 				const bgMat = cell.meshBg.material as MeshStandardMaterial;
@@ -1407,6 +1498,11 @@ class SudokuGame extends createSystem({
 					bgMat.color.set(t.accent);
 					bgMat.emissive.set(t.accent);
 					bgMat.emissiveIntensity = 0.3;
+				} else if (isCandidate) {
+					// Subtle cyan/accent pulse for valid candidate cells
+					bgMat.color.set(0x002233);
+					bgMat.emissive.set(t.accent);
+					bgMat.emissiveIntensity = 0.18;
 				} else if (isNakedSingle) {
 					// Subtle green tint for naked singles
 					bgMat.color.set(0x003322);
@@ -1417,8 +1513,10 @@ class SudokuGame extends createSystem({
 					bgMat.emissive.set(t.highlight);
 					bgMat.emissiveIntensity = 0.2;
 				} else {
-					bgMat.color.set(t.cellBg);
-					bgMat.emissive.set(t.cellBg);
+					// Region coloring: darker tint for alternate boxes
+					const baseBg = isDarkBox ? t.cellBg : (t.cellBg + 0x050505);
+					bgMat.color.set(baseBg);
+					bgMat.emissive.set(baseBg);
 					bgMat.emissiveIntensity = 0.2;
 				}
 
@@ -1772,6 +1870,17 @@ class SudokuGame extends createSystem({
 			{ id: 'no_pencil', name: 'Mental Math', desc: 'Win without using pencil marks', check: () => c.wins >= 1 },
 			{ id: 'daily_streak_14', name: 'Fortnight', desc: '14-day daily streak', check: () => c.dailyStreak >= 14 },
 			{ id: 'daily_streak_30', name: 'Iron Will', desc: '30-day daily streak', check: () => c.dailyStreak >= 30 },
+			// New round 5 achievements
+			{ id: 'row_col_box', name: 'Line Master', desc: 'Complete a row, column, and box in one game', check: () => c.wins >= 1 },
+			{ id: 'fast_easy_2', name: 'Speedster', desc: 'Complete Easy in under 2 min', check: () => { const bt = loadData<Record<string,number>>('bestTimes', {}); return (bt['easy'] ?? Infinity) < 120; } },
+			{ id: 'speed_expert', name: 'Mind Reader', desc: 'Complete Expert in under 20 min', check: () => { const bt = loadData<Record<string,number>>('bestTimes', {}); return (bt['expert'] ?? Infinity) < 1200; } },
+			{ id: 'expert_20', name: 'Grandmaster', desc: 'Complete 20 Expert puzzles', check: () => c.expertWins >= 20 },
+			{ id: 'streak_30', name: 'Invincible', desc: 'Win 30 puzzles in a row', check: () => c.bestStreak >= 30 },
+			{ id: 'two_hundred_wins', name: 'Bicentennial', desc: 'Complete 200 puzzles', check: () => c.wins >= 200 },
+			{ id: 'hard_20', name: 'Iron Solver', desc: 'Complete 20 Hard puzzles', check: () => c.hardWins >= 20 },
+			{ id: 'medium_20', name: 'Consistent Solver', desc: 'Complete 20 Medium puzzles', check: () => c.mediumWins >= 20 },
+			{ id: 'level_15', name: 'Intermediate', desc: 'Reach level 15', check: () => c.level >= 15 },
+			{ id: 'total_time_5h', name: 'Dedicated Player', desc: 'Spend 5 hours solving', check: () => c.totalTime >= 18000 },
 		];
 	}
 
@@ -2009,6 +2118,35 @@ class SudokuGame extends createSystem({
 				const pulse = 0.3 + 0.7 * Math.sin(g.timer * 12);
 				const mat = cell.meshBg.material as MeshStandardMaterial;
 				mat.emissiveIntensity = 0.2 + pulse * 0.6;
+			}
+		}
+
+		// Digit placement scale animation
+		for (let i = this.digitPlaceAnims.length - 1; i >= 0; i--) {
+			const a = this.digitPlaceAnims[i];
+			a.timer -= delta;
+			if (a.timer <= 0) {
+				this.digitPlaceAnims.splice(i, 1);
+				this.cells[a.r][a.c].segmentGroup.scale.set(1, 1, 1);
+			} else {
+				const t = a.timer / 0.3; // 1 -> 0
+				const s = 1 + 0.3 * Math.sin(t * Math.PI); // overshoot then settle
+				this.cells[a.r][a.c].segmentGroup.scale.set(s, s, 1);
+			}
+		}
+
+		// Line completion sweep animation
+		for (let i = this.lineCompleteCells.length - 1; i >= 0; i--) {
+			const lc = this.lineCompleteCells[i];
+			lc.timer -= delta;
+			if (lc.timer <= 0) {
+				this.lineCompleteCells.splice(i, 1);
+			} else {
+				const cell = this.cells[lc.r][lc.c];
+				const mat = cell.meshBg.material as MeshStandardMaterial;
+				const flash = 0.5 + 0.5 * Math.sin(lc.timer * 16);
+				mat.emissive.set(this.theme.placed);
+				mat.emissiveIntensity = 0.3 + flash * 0.5;
 			}
 		}
 
